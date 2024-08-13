@@ -14,14 +14,18 @@ public class runModel : MonoBehaviour
     private TensorFloat inputTensor;
     
     private float[] results;
+    private string[] labels;
 
     void Start()
     {
         runtimeModel = ModelLoader.Load(modelAsset);
         worker = WorkerFactory.CreateWorker(BackendType.GPUCompute, runtimeModel);
+        //read labels_new.txt
+        labels = System.IO.File.ReadAllLines("Assets/labels_new.txt");
+
     }
 
-    public float[] RunInference(Texture2D inputTexture)
+    public string RunInference(Texture2D inputTexture)
     {
         inputTensor?.Dispose();
         inputTensor = TextureConverter.ToTensor(inputTexture,244,244,3);
@@ -31,7 +35,17 @@ public class runModel : MonoBehaviour
         outputTensor.MakeReadable();
         results =  outputTensor.ToReadOnlyArray();
         outputTensor.Dispose();
-        return results;
+        // get the index of the max value
+        int maxIndex = 0;
+        for (int i = 0; i < results.Length; i++)
+        {
+            if (results[i] > results[maxIndex])
+            {
+                maxIndex = i;
+            }
+        }
+        string prediction = labels[maxIndex];
+        return prediction;
     }
     private void OnDisable()
     {

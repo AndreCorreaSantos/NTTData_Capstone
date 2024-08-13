@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Unity.Sentis;
 
@@ -13,14 +14,15 @@ public class getImage : MonoBehaviour
     private TensorFloat inputTensor;
 
     public RenderTexture renderTexture;
-    private ImageResizer resizer;
-    public float[] results;
-    
+    private Preprocessor prepro;
+
+    private string[] labels;
+    public string[] topPredictions;
 
     void Start()
     {
         _mCamera = Camera.main;
-        resizer = new ImageResizer();
+        prepro = new Preprocessor();
         runtimeModel = ModelLoader.Load(modelAsset);
         worker = WorkerFactory.CreateWorker(BackendType.GPUCompute, runtimeModel);
         if (renderTexture == null)
@@ -28,14 +30,16 @@ public class getImage : MonoBehaviour
             renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
         }
 
+        //read labels_new.txt
+        labels = System.IO.File.ReadAllLines("Assets/labels_new.txt");
     }
 
     void Update()
     {
-        results = CallModel();
+        topPredictions = CallModel();
     }
 
-    float[] CallModel()
+    private string[] CallModel()
     {
         _mCamera.targetTexture = renderTexture;
         _mCamera.Render();
@@ -48,21 +52,33 @@ public class getImage : MonoBehaviour
         RenderTexture.active = null;
         _mCamera.targetTexture = null;
 
-        Texture2D input = resizer.ResizeImage(texture2D, 244, 244);
+        Texture2D input = prepro.Preprocess(texture2D, 244, 244);
         saveToAssets(input);
-        return RunInference(input);
-    }
+        float[] results = RunInference(input);
 
+        // Get the indices of the top 5 results
+        int[] topIndices = results
+            .Select((value, index) => new { Value = value, Index = index })
+            .OrderByDescending(item => item.Value)
+            .Take(5)
+            .Select(item => item.Index)
+            .ToArray();
+
+        // Return the corresponding labels
+        return topIndices.Select(index => labels[index]).ToArray();
+    }
 
     public float[] RunInference(Texture2D inputTexture)
     {
         inputTensor?.Dispose();
-        inputTensor = TextureConverter.ToTensor(inputTexture,244,244,3);
+        saveToAssets(inputTexture);
+
+        inputTensor = TextureConverter.ToTensor(inputTexture, 244, 244, 3);
         worker.Execute(inputTensor);
 
         TensorFloat outputTensor = worker.PeekOutput() as TensorFloat;
         outputTensor.MakeReadable();
-        results =  outputTensor.ToReadOnlyArray();
+        float[] results = outputTensor.ToReadOnlyArray();
         outputTensor.Dispose();
         return results;
     }
@@ -72,8 +88,8 @@ public class getImage : MonoBehaviour
         // write the texture to a 244x244 png on assets folder
         byte[] bytes = input.EncodeToPNG();
         System.IO.File.WriteAllBytes(Application.dataPath + "/input.png", bytes);
-        
     }
+
     void OnDestroy()
     {
         if (renderTexture != null)
