@@ -8,6 +8,21 @@ using HoloLab.DNN.ObjectDetection;
 
 namespace Sample
 {
+        public class ObjectDetectionResult
+        {
+            public Rect rect;
+            public string label;
+            public float score;
+
+            // Constructor
+            public ObjectDetectionResult(Rect rect, string label, float score)
+            {
+                this.rect = rect;
+                this.label = label;
+                this.score = score;
+            }
+        }
+
     public class ObjectDetection : MonoBehaviour
     {
         [SerializeField, Tooltip("Input Image")] private RawImage input_image = null;
@@ -22,6 +37,7 @@ namespace Sample
         private Color color_offset;
         private List<Color> colors;
         private List<string> labels;
+
 
         private void Start()
         {
@@ -45,20 +61,26 @@ namespace Sample
             color_offset = new Color(0.5f, 0.5f, 0.5f, 0.0f);
         }
 
-        public void Inference(Texture2D input_texture)
+        public List<ObjectDetectionResult> Inference(Texture2D input_texture)
         {
+            List<ObjectDetectionResult> detectionResults = new List<ObjectDetectionResult>();
             // Get Texture from Raw Image;
             if (input_texture == null)
             {
                 Debug.Log("vazando");
-                return;
+                return detectionResults;
             }
 
             // Detect Objects
             var objects = model.Detect(input_texture, score_threshold, iou_threshold);
             // Show Objects on Unity Console
-            objects.ForEach(o => Debug.Log($"{o.class_id} {labels[o.class_id]} ({o.score:F2}) : {o.rect}"));
-
+            for(int i = 0; i < objects.Count; i++)
+            {
+                var o = objects[i];
+                ObjectDetectionResult obj = new ObjectDetectionResult(o.rect,labels[o.class_id],o.score);
+                detectionResults.Add(obj);
+            }
+            return detectionResults;
         }
         private void OnDestroy()
         {
