@@ -43,41 +43,22 @@ namespace Sample
             }
             colors = HoloLab.DNN.ObjectDetection.Visualizer.GenerateRandomColors(labels.Count);
             color_offset = new Color(0.5f, 0.5f, 0.5f, 0.0f);
-            Inference();
         }
 
-        public void Inference()
+        public void Inference(Texture2D input_texture)
         {
-            // Get Texture from Raw Image
-            var input_texture = input_image.texture as Texture2D;
+            // Get Texture from Raw Image;
             if (input_texture == null)
             {
+                Debug.Log("vazando");
                 return;
             }
 
             // Detect Objects
             var objects = model.Detect(input_texture, score_threshold, iou_threshold);
-
             // Show Objects on Unity Console
             objects.ForEach(o => Debug.Log($"{o.class_id} {labels[o.class_id]} ({o.score:F2}) : {o.rect}"));
 
-            // Draw Objects on Unity UI
-            HoloLab.DNN.ObjectDetection.Visualizer.ClearBoundingBoxes(input_image);
-            objects.ForEach(o => HoloLab.DNN.ObjectDetection.Visualizer.DrawBoudingBox(input_image, o.rect, colors[o.class_id]));
-
-            // draw center of bounding box
-           
-
-
-
-            HoloLab.DNN.ObjectDetection.Visualizer.ClearLabels(input_image);
-            objects.ForEach(o => HoloLab.DNN.ObjectDetection.Visualizer.DrawLabel(input_image, o.rect, colors[o.class_id] - color_offset, $"{labels[o.class_id]} ({o.score:F2})", font));
-
-            foreach (var o in objects)
-            {
-                Vector2 center = new Vector2(o.rect.x + o.rect.width / 2, o.rect.y + o.rect.height / 2);
-                HoloLab.DNN.ObjectDetection.Visualizer.DrawBoudingBox(input_image, new Rect(center.x, center.y, 10, 10), new Color(1, 0, 0, 1));
-            }
         }
         private void OnDestroy()
         {
