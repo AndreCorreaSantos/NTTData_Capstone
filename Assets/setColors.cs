@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-
+[ExecuteInEditMode]
 public class setColors : MonoBehaviour
 {
     public Image Background;
@@ -9,7 +9,7 @@ public class setColors : MonoBehaviour
     public Color TextColor;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
 // run in editor
-    [ExecuteInEditMode]
+    
     void Update()
     {
         Background.color = BackgroundColor;

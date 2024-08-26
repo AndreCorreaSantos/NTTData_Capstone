@@ -2899,8 +2899,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Background: {fileID: 991638713}
-  BackgroundColor: {r: 1, g: 0.17295593, b: 0.17295593, a: 1}
-  TextColor: {r: 0, g: 1, b: 0.017213821, a: 1}
+  BackgroundColor: {r: 0, g: 0, b: 0, a: 1}
+  TextColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &2102629066
 GameObject:
   m_ObjectHideFlags: 0
