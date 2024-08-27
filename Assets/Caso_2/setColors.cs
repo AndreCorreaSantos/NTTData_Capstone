@@ -1,31 +1,36 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
+using Unity.VisualScripting;
 [ExecuteInEditMode]
 public class setColors : MonoBehaviour
 {
     public Image Background;
-    public Color BackgroundColor;
-    public Color TextColor;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-// run in editor
-    
-    void Update()
-    {
-        Background.color = BackgroundColor;
-        setColorsRecursive(transform);
-    }
+    private List<TextMeshProUGUI> textObjects = new List<TextMeshProUGUI>();
 
-    // traverse childs and get textMeshPro components
-    void setColorsRecursive(Transform parent)
+    void Start()
     {
+        FindTextObjects(transform);
+    }
+    void FindTextObjects(Transform parent)
+    {
+
         foreach (Transform child in parent)
         {
             if (child.GetComponent<TextMeshProUGUI>() != null)
             {
-                child.GetComponent<TextMeshProUGUI>().color = TextColor;
+                textObjects.Add(child.GetComponent<TextMeshProUGUI>());
             }
-            setColorsRecursive(child);
+            FindTextObjects(child);
+        }
+    }
+    public void SetColor(Color BackgroundColor, Color TextColor)
+    {
+        Background.color = BackgroundColor;
+        foreach (TextMeshProUGUI text in textObjects)
+        {
+            text.color = TextColor;
         }
     }
 

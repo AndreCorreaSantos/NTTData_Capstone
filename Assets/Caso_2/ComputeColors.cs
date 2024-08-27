@@ -8,6 +8,10 @@ public class ComputeColors : MonoBehaviour
 
     private RenderTexture computeTexture;
     private Texture2D texture2D;
+    private ComputeBuffer resultBuffer;
+    private float scale_factor = 100000.0f;
+    private int width;
+    private int height;
 
     void Start()
     {
@@ -21,10 +25,10 @@ public class ComputeColors : MonoBehaviour
             UICamera = GameObject.Find("UICamera").GetComponent<Camera>();
         }
 
-        InitializeRenderTexture();
+        InitializeResources();
     }
 
-    void InitializeRenderTexture()
+    void InitializeResources()
     {
         computeTexture = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
         computeTexture.enableRandomWrite = true;
@@ -32,13 +36,26 @@ public class ComputeColors : MonoBehaviour
         UICamera.targetTexture = computeTexture;
 
         texture2D = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+
+
+        width = computeTexture.width;
+        height = computeTexture.height;
+
+
+        resultBuffer = new ComputeBuffer(3, sizeof(uint));
+
+        computeShader.SetBuffer(0, "ResultBuffer", resultBuffer);
+        computeShader.SetFloat("scale_factor", scale_factor);
+        computeShader.SetInt("width", width);
+        computeShader.SetInt("height", height);
     }
 
     void Update()
     {
         CaptureCameraOutput();
         ExecuteComputeShader();
-        ReadFromComputeTexture();
+        // ReadFromComputeTexture();
+        ReadComputeBuffer();
     }
 
     void CaptureCameraOutput()
@@ -46,16 +63,16 @@ public class ComputeColors : MonoBehaviour
         RenderTexture.active = computeTexture;
         UICamera.Render();
         RenderTexture.active = null;
-
-        Debug.Log("Captured camera output to compute texture.");
     }
 
     void ExecuteComputeShader()
     {
-        computeShader.SetTexture(0, "Result", computeTexture);
-        computeShader.Dispatch(0, computeTexture.width / 8, computeTexture.height / 8, 1);
 
-        Debug.Log("Executed compute shader.");
+        uint[] zeroArray = new uint[3] { 0, 0, 0 };
+        resultBuffer.SetData(zeroArray);
+
+        computeShader.SetTexture(0, "Result", computeTexture);
+        computeShader.Dispatch(0, Mathf.CeilToInt(width / 8.0f), Mathf.CeilToInt(height / 8.0f), 1);
     }
 
     void ReadFromComputeTexture()
@@ -65,9 +82,25 @@ public class ComputeColors : MonoBehaviour
         texture2D.Apply();
         RenderTexture.active = null;
 
-        string path = Application.dataPath + "/ComputeColors.png";
-        System.IO.File.WriteAllBytes(path, texture2D.EncodeToPNG());
-        Debug.Log("Saved image to " + path);
+        // string path = Application.dataPath + "/ComputeColors.png";
+        // System.IO.File.WriteAllBytes(path, texture2D.EncodeToPNG());
+        // Debug.Log("Saved image to " + path);
+    }
+
+    void ReadComputeBuffer()
+    {
+
+        uint[] resultData = new uint[resultBuffer.count];
+        resultBuffer.GetData(resultData);
+
+        float averageR = (float)resultData[0] / (scale_factor * width * height);
+        float averageG = (float)resultData[1] / (scale_factor * width * height);
+        float averageB = (float)resultData[2] / (scale_factor * width * height);
+
+        Color backgroundColor = new Color(averageR, averageG, averageB,1);
+        Color textColor = new Color(1 - averageR, 1 - averageG, 1 - averageB,1);
+        Debug.Log("Background color: " + backgroundColor);
+        setColors.SetColor(backgroundColor, textColor);
     }
 
     private void OnDestroy()
@@ -75,6 +108,11 @@ public class ComputeColors : MonoBehaviour
         if (computeTexture != null)
         {
             computeTexture.Release();
+        }
+
+        if (resultBuffer != null)
+        {
+            resultBuffer.Release();
         }
     }
 }
