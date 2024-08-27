@@ -23,7 +23,6 @@ public class setColors : MonoBehaviour
         {
             if (child.GetComponent<TextMeshProUGUI>() != null)
             {
-                Debug.Log("teste");
                 child.GetComponent<TextMeshProUGUI>().color = TextColor;
             }
             setColorsRecursive(child);
