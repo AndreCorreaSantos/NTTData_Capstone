@@ -6,7 +6,6 @@ public class ComputeColors : MonoBehaviour
     public Camera UICamera;
     public ComputeShader computeShader;
 
-    private RenderTexture renderTexture;
     private RenderTexture computeTexture;
     private Texture2D texture2D;
 
@@ -22,19 +21,15 @@ public class ComputeColors : MonoBehaviour
             UICamera = GameObject.Find("UICamera").GetComponent<Camera>();
         }
 
-        InitializeRenderTextures();
+        InitializeRenderTexture();
     }
 
-    void InitializeRenderTextures()
+    void InitializeRenderTexture()
     {
-        renderTexture = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
-        renderTexture.enableRandomWrite = true;
-        renderTexture.Create();
-        UICamera.targetTexture = renderTexture;
-
-        computeTexture = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32);
+        computeTexture = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
         computeTexture.enableRandomWrite = true;
         computeTexture.Create();
+        UICamera.targetTexture = computeTexture;
 
         texture2D = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
     }
@@ -48,15 +43,19 @@ public class ComputeColors : MonoBehaviour
 
     void CaptureCameraOutput()
     {
-        RenderTexture.active = renderTexture;
+        RenderTexture.active = computeTexture;
         UICamera.Render();
         RenderTexture.active = null;
+
+        Debug.Log("Captured camera output to compute texture.");
     }
 
     void ExecuteComputeShader()
     {
         computeShader.SetTexture(0, "Result", computeTexture);
         computeShader.Dispatch(0, computeTexture.width / 8, computeTexture.height / 8, 1);
+
+        Debug.Log("Executed compute shader.");
     }
 
     void ReadFromComputeTexture()
@@ -66,16 +65,13 @@ public class ComputeColors : MonoBehaviour
         texture2D.Apply();
         RenderTexture.active = null;
 
-        Debug.Log(texture2D.GetPixel(0, 0));
+        string path = Application.dataPath + "/ComputeColors.png";
+        System.IO.File.WriteAllBytes(path, texture2D.EncodeToPNG());
+        Debug.Log("Saved image to " + path);
     }
 
     private void OnDestroy()
     {
-        if (renderTexture != null)
-        {
-            renderTexture.Release();
-        }
-
         if (computeTexture != null)
         {
             computeTexture.Release();
