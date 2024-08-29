@@ -2839,6 +2839,8 @@ MonoBehaviour:
   renderTexture: {fileID: 0}
   imageTexture: {fileID: 0}
   objectDetect: {fileID: 1260652590}
+  canvas: {fileID: 0}
+  boundingBoxPrefab: {fileID: 0}
 --- !u!1 &1598269138
 GameObject:
   m_ObjectHideFlags: 0
@@ -3368,6 +3370,50 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 10, y: 2.220446e-16, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &2129700965
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2129700967}
+  - component: {fileID: 2129700966}
+  m_Layer: 0
+  m_Name: ImageCollectionAndAnalyzer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2129700966
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2129700965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d09405f65a08d554184943823d7b6bad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &2129700967
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2129700965}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.8411096, y: 2.175386, z: 0.29989934}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1565887663878291440
 GameObject:
   m_ObjectHideFlags: 0
@@ -3850,3 +3896,4 @@ SceneRoots:
   - {fileID: 2012054795}
   - {fileID: 1287932501}
   - {fileID: 1260652591}
+  - {fileID: 2129700967}
