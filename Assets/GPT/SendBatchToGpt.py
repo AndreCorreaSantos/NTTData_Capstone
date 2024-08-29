@@ -4,7 +4,6 @@ import base64
 import os
 import re
 
-
 # Function to encode the image
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -70,6 +69,8 @@ def analyze_all_images_in_dir(path_to_dir, client):
 
 
 if __name__ == '__main__':
+    UnityEngine.Debug.Log("Hello from python")
+
     azure_client = AzureOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         api_version="2023-03-15-preview"
