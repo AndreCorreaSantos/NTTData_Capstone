@@ -1,3 +1,0 @@
-import UnityEngine
-
-UnityEngine.Log("Hello from python!");
