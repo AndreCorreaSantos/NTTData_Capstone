@@ -83,7 +83,7 @@ public class runSegmentation : MonoBehaviour
         //TODO: DRAW BOUNDING BOX ON screen Corners
 
         // Get the camera image and perform inference
-        List<ObjectDetectionResult> detectionResults = objectDetect.Inference(GetCameraImage());
+        List<ObjectDetectionResult> detectionResults = objectDetect.Inference(GetCameraImage()); // LEAKING GPU
         for (int i = 0; i < detectionResults.Count; i++)
         {
             Rect r = detectionResults[i].rect;
@@ -118,12 +118,13 @@ public class runSegmentation : MonoBehaviour
             if (overlap){
                 ui.transform.RotateAround(renderCamera.transform.position,Vector3.up,Mathf.Sign(centerXUI-centerX)*20*Time.deltaTime);
             }
+            
 
 
             // DRAW BOUNDING BOX IN DETECTED OBJECTS
             //ScreenGizmos.DrawRect(GetComponent<Camera>(), canvas, r);
         }
-        // DRAW BOUNDING BOX IN SCREEN CORNERS
+        detectionResults.Clear();
 
     }
 
@@ -149,7 +150,7 @@ public class runSegmentation : MonoBehaviour
         }
     }
 
-    void OnDisable() // geepeetee
+    void OnDisable()
 {
     if (renderTexture != null)
     {
