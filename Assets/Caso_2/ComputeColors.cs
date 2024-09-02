@@ -54,7 +54,7 @@ public class ComputeColors : MonoBehaviour
 
 
         backgroundCielab.x -=30;
-        textCielab.x +=30;
+        textCielab.x = backgroundCielab.x + 60;
 
         Color newBackgroundColor = ColorConversion.CIELABToRGB(backgroundCielab);
         Color newTextColor = ColorConversion.CIELABToRGB(textCielab);
