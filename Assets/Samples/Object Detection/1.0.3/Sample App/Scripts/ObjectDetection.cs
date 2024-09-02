@@ -25,7 +25,7 @@ namespace Sample
 
     public class ObjectDetection : MonoBehaviour
     {
-        [SerializeField, Tooltip("Input Image")] private RawImage input_image = null;
+        //[SerializeField, Tooltip("Input Image")] private RawImage input_image = null;
         [SerializeField, Tooltip("Weights")] private ModelAsset weights = null;
         [SerializeField, Tooltip("Label List")] private TextAsset names = null;
         [SerializeField, Tooltip("Confidence Score Threshold"), Range(0.0f, 1.0f)] private float score_threshold = 0.6f;
@@ -61,7 +61,7 @@ namespace Sample
             color_offset = new Color(0.5f, 0.5f, 0.5f, 0.0f);
         }
 
-        public List<ObjectDetectionResult> Inference(Texture2D input_texture)
+        public List<ObjectDetectionResult> Inference(Texture2D input_texture) // LEAKING GPU
         {
             List<ObjectDetectionResult> detectionResults = new List<ObjectDetectionResult>();
             // Get Texture from Raw Image;
@@ -73,6 +73,7 @@ namespace Sample
 
             // Detect Objects
             var objects = model.Detect(input_texture, score_threshold, iou_threshold);
+            
             // Show Objects on Unity Console
             for(int i = 0; i < objects.Count; i++)
             {
@@ -80,6 +81,7 @@ namespace Sample
                 ObjectDetectionResult obj = new ObjectDetectionResult(o.rect,labels[o.class_id],o.score);
                 detectionResults.Add(obj);
             }
+            
             return detectionResults;
         }
         private void OnDestroy()
