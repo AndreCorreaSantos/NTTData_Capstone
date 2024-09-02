@@ -4,25 +4,30 @@ public class ComputeColors : MonoBehaviour
 {
     public setColors setColors;
     public Camera UICamera;
-    public ComputeShader computeShader;
 
-    private RenderTexture computeTexture;
+    private RenderTexture renderTexture;
     private Texture2D texture2D;
-    private ComputeBuffer resultBuffer;
-    private float scale_factor = 100000.0f;
-    private int width;
-    private int height;
 
     void Start()
     {
         if (setColors == null)
         {
             setColors = GetComponent<setColors>();
+            if (setColors == null)
+            {
+                Debug.LogError("SetColors component is not assigned and cannot be found on the GameObject.");
+                return;
+            }
         }
 
         if (UICamera == null)
         {
             UICamera = GameObject.Find("UICamera").GetComponent<Camera>();
+            if (UICamera == null)
+            {
+                Debug.LogError("UICamera is not assigned and cannot be found in the scene.");
+                return;
+            }
         }
 
         InitializeResources();
@@ -30,89 +35,63 @@ public class ComputeColors : MonoBehaviour
 
     void InitializeResources()
     {
-        computeTexture = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
-        computeTexture.enableRandomWrite = true;
-        computeTexture.Create();
-        UICamera.targetTexture = computeTexture;
+        renderTexture = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
+        renderTexture.Create();
+        UICamera.targetTexture = renderTexture;
 
         texture2D = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
-
-
-        width = computeTexture.width;
-        height = computeTexture.height;
-
-
-        resultBuffer = new ComputeBuffer(3, sizeof(uint));
-
-        computeShader.SetBuffer(0, "ResultBuffer", resultBuffer);
-        computeShader.SetFloat("scale_factor", scale_factor);
-        computeShader.SetInt("width", width);
-        computeShader.SetInt("height", height);
     }
 
     void Update()
     {
         CaptureCameraOutput();
-        ExecuteComputeShader();
-        // ReadFromComputeTexture();
-        ReadComputeBuffer();
+
+        Color backgroundColor = GetAverageColor();
+        Vector3 backgroundCielab = ColorConversion.RGBToCIELAB(backgroundColor);
+
+        Color textColor = Color.white;
+        Vector3 textCielab = ColorConversion.RGBToCIELAB(textColor);
+
+
+        backgroundCielab.x -=30;
+        textCielab.x +=30;
+
+        Color newBackgroundColor = ColorConversion.CIELABToRGB(backgroundCielab);
+        Color newTextColor = ColorConversion.CIELABToRGB(textCielab);
+
+
+
+        setColors.SetColor(newBackgroundColor, newTextColor);
     }
 
-    void CaptureCameraOutput()
+    private void CaptureCameraOutput()
     {
-        RenderTexture.active = computeTexture;
+        RenderTexture.active = renderTexture;
         UICamera.Render();
-        RenderTexture.active = null;
-    }
-
-    void ExecuteComputeShader()
-    {
-
-        uint[] zeroArray = new uint[3] { 0, 0, 0 };
-        resultBuffer.SetData(zeroArray);
-
-        computeShader.SetTexture(0, "Result", computeTexture);
-        computeShader.Dispatch(0, Mathf.CeilToInt(width / 8.0f), Mathf.CeilToInt(height / 8.0f), 1);
-    }
-
-    void ReadFromComputeTexture()
-    {
-        RenderTexture.active = computeTexture;
-        texture2D.ReadPixels(new Rect(0, 0, computeTexture.width, computeTexture.height), 0, 0);
+        texture2D.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
         texture2D.Apply();
         RenderTexture.active = null;
-
-        // string path = Application.dataPath + "/ComputeColors.png";
-        // System.IO.File.WriteAllBytes(path, texture2D.EncodeToPNG());
-        // Debug.Log("Saved image to " + path);
     }
 
-    void ReadComputeBuffer()
+    private Color GetAverageColor()
     {
+        Color[] pixels = texture2D.GetPixels();
+        Vector3 sum = Vector3.zero;
 
-        uint[] resultData = new uint[resultBuffer.count];
-        resultBuffer.GetData(resultData);
+        foreach (Color pixel in pixels)
+        {
+            sum += new Vector3(pixel.r, pixel.g, pixel.b);
+        }
 
-        float averageR = (float)resultData[0] / (scale_factor * width * height);
-        float averageG = (float)resultData[1] / (scale_factor * width * height);
-        float averageB = (float)resultData[2] / (scale_factor * width * height);
-
-        Color backgroundColor = new Color(averageR, averageG, averageB,1);
-        Color textColor = new Color(1 - averageR, 1 - averageG, 1 - averageB,1);
-        Debug.Log("Background color: " + backgroundColor);
-        setColors.SetColor(backgroundColor, textColor);
+        Vector3 average = sum / pixels.Length;
+        return new Color(average.x, average.y, average.z);
     }
 
     private void OnDestroy()
     {
-        if (computeTexture != null)
+        if (renderTexture != null)
         {
-            computeTexture.Release();
-        }
-
-        if (resultBuffer != null)
-        {
-            resultBuffer.Release();
+            renderTexture.Release();
         }
     }
 }
