@@ -73,3 +73,6 @@ crashlytics-build.properties
 
 #Ignore any remaining screenshots not removed by the auto cleaner
 /[Aa]ssets/GPT/CapturedImages/*
+
+*.env
+env/
