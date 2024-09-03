@@ -2,16 +2,27 @@ using UnityEngine;
 
 public class ClientLogic : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public Connection connection;
-    public CaptureFrames captureFrames;
+    public Connection connection;  
+    public CaptureFrames captureFrames; 
 
 
     void Update()
     {
-        Texture2D image = captureFrames.GetCameraImage();
-        // encode image to byte array
-        byte[] img = image.EncodeToPNG();
-        connection.SendWebSocketMessage(img);
+        if (captureFrames != null)
+        {
+            // Call the asynchronous method to capture the camera image
+            captureFrames.GetCameraImageAsync(OnImageCaptured);
+        }
+    }
+
+    // Callback method that gets called when the image capture is complete
+    private void OnImageCaptured(Texture2D image)
+    {
+        if (image != null)
+        {
+            // Encode image to byte array
+            byte[] img = image.EncodeToPNG();
+            connection.SendWebSocketMessage(img);
+        }
     }
 }
