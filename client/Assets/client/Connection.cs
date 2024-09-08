@@ -9,9 +9,11 @@ public class Connection : MonoBehaviour
 {
   WebSocket websocket;
 
-  // Start is called before the first frame update
+  // URL for WebSocket connection
   public string url = "ws://localhost:8000";
-  async void Start()
+
+  // StartConnection function to initialize and start the WebSocket connection
+  public async void StartConnection()
   {
     websocket = new WebSocket(url);
 
@@ -46,21 +48,38 @@ public class Connection : MonoBehaviour
   void Update()
   {
     #if !UNITY_WEBGL || UNITY_EDITOR
-      websocket.DispatchMessageQueue();
+      if (websocket != null)
+      {
+        websocket.DispatchMessageQueue();
+      }
     #endif
   }
 
   public async void SendWebSocketMessage(byte[] message)
   {
+    if (websocket == null)
+    {
+      Debug.LogWarning("WebSocket is not initialized.");
+      return;
+    }
+
     if (websocket.State == WebSocketState.Open)
     {
+      Debug.Log("Sending message via WebSocket...");
       await websocket.Send(message);
+      Debug.Log("Message sent!");
+    }
+    else
+    {
+      Debug.LogWarning("WebSocket is not open. Current state: " + websocket.State);
     }
   }
 
   private async void OnApplicationQuit()
   {
-    await websocket.Close();
+    if (websocket != null)
+    {
+      await websocket.Close();
+    }
   }
-
 }
