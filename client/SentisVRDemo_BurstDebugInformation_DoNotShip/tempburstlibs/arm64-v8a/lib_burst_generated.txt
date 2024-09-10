@@ -1,4 +1,4 @@
-Library: E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
+Library: C:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
 --platform=Android
 --backend=burst-llvm-16
 --target=ARMV8A_AARCH64
@@ -8,10 +8,11 @@ Library: E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-
 --float-precision=Standard
 --target-framework=NetFramework
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--temp-folder=C:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--debug=LineOnly
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.0.14f1/Editor/Data/PlaybackEngines/AndroidPlayer
---decode-folder=E:\Insper\PFE\sentisVRDemo\client\Library\Burst
---output=E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
+--decode-folder=C:\Insper\PFE\sentisVRDemo\client\Library\Burst
+--output=C:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Sentis.IParallelForBatchExtensions+ParallelForBatchJobStruct`1[[Unity.Sentis.CPUBackend+PowFloatJob, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.Sentis.CPUBackend+PowFloatJob&, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--3432584cfedee500fe7e0f0bca5484b6
@@ -125,10 +126,11 @@ Library: E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-
 --target-framework=NetFramework
 --float-mode=Fast
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--temp-folder=C:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--debug=LineOnly
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.0.14f1/Editor/Data/PlaybackEngines/AndroidPlayer
---decode-folder=E:\Insper\PFE\sentisVRDemo\client\Library\Burst
---output=E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
+--decode-folder=C:\Insper\PFE\sentisVRDemo\client\Library\Burst
+--output=C:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Sentis.IParallelForBatchExtensions+ParallelForBatchJobStruct`1[[Unity.Sentis.CPUBackend+ReduceProdFloatJob, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.Sentis.CPUBackend+ReduceProdFloatJob&, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--4384ce14898add006f2e112e2000ae17
@@ -192,10 +194,11 @@ Library: E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-
 --float-precision=Standard
 --target-framework=NetFramework
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--temp-folder=C:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--debug=LineOnly
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.0.14f1/Editor/Data/PlaybackEngines/AndroidPlayer
---decode-folder=E:\Insper\PFE\sentisVRDemo\client\Library\Burst
---output=E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
+--decode-folder=C:\Insper\PFE\sentisVRDemo\client\Library\Burst
+--output=C:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Sentis.CPUBackend+ConvJob, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null::CanUseDepthwiseConvKernel(Unity.Sentis.CPUBackend+ConvJob*, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null)--749c8663ad9ca6b2a08470eb20d7fe3c
@@ -208,10 +211,11 @@ Library: E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-
 --float-precision=Standard
 --target-framework=NetFramework
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--temp-folder=C:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--debug=LineOnly
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.0.14f1/Editor/Data/PlaybackEngines/AndroidPlayer
---decode-folder=E:\Insper\PFE\sentisVRDemo\client\Library\Burst
---output=E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
+--decode-folder=C:\Insper\PFE\sentisVRDemo\client\Library\Burst
+--output=C:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Sentis.IParallelForBatchExtensions+ParallelForBatchJobStruct`1[[Unity.Sentis.CPUBackend+LogJob, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.Sentis.CPUBackend+LogJob&, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--d07b52e4f2c40107255daa3f5391c37a
@@ -323,10 +327,11 @@ Library: E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-
 --float-precision=Standard
 --target-framework=NetFramework
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--temp-folder=C:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--debug=LineOnly
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.0.14f1/Editor/Data/PlaybackEngines/AndroidPlayer
---decode-folder=E:\Insper\PFE\sentisVRDemo\client\Library\Burst
---output=E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
+--decode-folder=C:\Insper\PFE\sentisVRDemo\client\Library\Burst
+--output=C:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Jobs.IJobExtensions+JobStruct`1[[UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Jobs.Float4TweenJob, Unity.XR.Interaction.Toolkit, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Jobs.Float4TweenJob&, Unity.XR.Interaction.Toolkit, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--34aec427743d7d01c0cb7a219c9fbe32
@@ -422,10 +427,11 @@ Library: E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-
 --target-framework=NetFramework
 --float-mode=Fast
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--temp-folder=C:\Insper\PFE\sentisVRDemo\client\Temp\Burst
+--debug=LineOnly
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.0.14f1/Editor/Data/PlaybackEngines/AndroidPlayer
---decode-folder=E:\Insper\PFE\sentisVRDemo\client\Library\Burst
---output=E:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
+--decode-folder=C:\Insper\PFE\sentisVRDemo\client\Library\Burst
+--output=C:\Insper\PFE\sentisVRDemo\client\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[Unity.Sentis.CPUBackend+GlobalAverageVariancePoolJob, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.Sentis.CPUBackend+GlobalAverageVariancePoolJob&, Unity.Sentis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--206af1cda3f63bc0adddbb3dd4f00913

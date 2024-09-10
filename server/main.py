@@ -21,6 +21,7 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # Receive a message
             message = await websocket.receive()
+            #print(f"Received message: {message}")
             data = message.get("bytes")
 
             if data:
