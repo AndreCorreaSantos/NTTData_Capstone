@@ -1,3 +1,5 @@
+# server_main.py
+
 from fastapi import FastAPI, WebSocket
 import uvicorn
 from PIL import Image
@@ -13,8 +15,15 @@ from image_processing import process_image, calculate_background_colors
 app = FastAPI()
 model = YOLO("yolov8n.pt")
 
+# Initialize a variable to store the latest depth frame (optional)
+latest_depth_frame = None
+
+# Define the class name for "person" (adjust based on your YOLO model's classes)
+PERSON_CLASS_NAME = "person"
+
 @app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
+    global latest_depth_frame
     print("WebSocket connection starting...")
     await websocket.accept()
 
@@ -27,34 +36,67 @@ async def websocket_endpoint(websocket: WebSocket):
             image_data_base64 = data.get('imageData')
             position = data.get('position')
             rotation = data.get('rotation')
+            fx = data.get('fx')  # Camera intrinsic fx
+            fy = data.get('fy')  # Camera intrinsic fy
+            cx = data.get('cx')  # Camera principal point x
+            cy = data.get('cy')  # Camera principal point y
 
-            image_data_bytes = base64.b64decode(image_data_base64)
-            image = Image.open(io.BytesIO(image_data_bytes))
-            image_np = np.array(image)
+            # Validate essential fields
+            if image_type is None or image_data_base64 is None:
+                print("Missing 'type' or 'imageData' in the received message.")
+                continue
+
+            # Decode the image data
+            try:
+                image_data_bytes = base64.b64decode(image_data_base64)
+                image = Image.open(io.BytesIO(image_data_bytes))
+                image_np = np.array(image)
+            except Exception as e:
+                print(f"Failed to decode image data: {e}")
+                continue
 
             if image_type == "color":
+                # Convert RGB to BGR for OpenCV
                 current_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
                 # Calculate GUI colors
                 gui_back_color, gui_text_color = calculate_background_colors(current_frame)
 
-                # Initialize object_position as None
-                object_position_data = None
+                # Initialize list to hold positions of all detected persons
+                object_positions = []
 
-                # Object detection
+                # Object detection using YOLO
                 results = model(current_frame, verbose=False)
+
+                # Iterate through all detections
+                
                 for detection in results:
                     if detection is not None:
                         detection_json = detection.tojson()
                         result_json = json.loads(detection_json)
-                        if result_json:
-                            object_position = process_image(current_frame, result_json, rotation, position)
-                            object_position_data = {
-                                "x": object_position['x'],
-                                "y": object_position['y'],
-                                "z": object_position['z']
-                            }
-                            break  # Process only the first detected object
+                        
+                        # Assuming result_json is a list of detections
+                        for det in result_json:
+                            # Check if the detected class is "person"
+                            print(det["name"])
+                            if(det["name"] == "person"):
+                                object_position = process_image(
+                                    current_frame,
+                                    det,  # Single detection
+                                    rotation,
+                                    position,
+                                    fx,
+                                    fy,
+                                    cx,
+                                    cy,
+                                    latest_depth_frame  # Can be None
+                                )
+                                if object_position:
+                                    object_positions.append({
+                                        "x": object_position['x'],
+                                        "y": object_position['y'],
+                                        "z": object_position['z']
+                                    })
 
                 # Prepare the combined JSON message
                 frame_data_message = {
@@ -71,17 +113,38 @@ async def websocket_endpoint(websocket: WebSocket):
                             "b": gui_text_color[2]
                         }
                     },
-                    "object_position": object_position_data  # None if no object detected
+                    "object_positions": object_positions if object_positions else None  # List or None
                 }
 
-                await websocket.send_text(json.dumps(frame_data_message))
+                # Send the response back to the client
+                try:
+                    await websocket.send_text(json.dumps(frame_data_message))
+                except Exception as e:
+                    print(f"Failed to send frame data message: {e}")
 
+                # Display the color image (optional, useful for debugging)
                 cv2.imshow("Color Image", current_frame)
                 cv2.waitKey(1)
 
             elif image_type == "depth":
-                current_depth_frame = image_np
-                cv2.imshow("Depth Image", current_depth_frame)
+                # Store the latest depth frame
+                # Assuming depth image is grayscale or single-channel
+                if len(image_np.shape) == 3 and image_np.shape[2] > 1:
+                    # Convert to grayscale if it's a color image
+                    depth_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+                else:
+                    depth_frame = image_np
+
+                # Normalize depth frame to float32 (assuming depth is encoded in 16-bit or similar)
+                depth_frame = depth_frame.astype(np.float32)
+                # Example normalization: scale depth to meters if needed
+                # Adjust the scaling factor based on your depth encoding
+                depth_frame /= 1000.0  # Example: if depth is in millimeters
+
+                latest_depth_frame = depth_frame
+
+                # Display the depth image (optional, useful for debugging)
+                cv2.imshow("Depth Image", depth_frame)
                 cv2.waitKey(1)
 
     except Exception as e:
