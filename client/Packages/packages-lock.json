@@ -7,21 +7,20 @@
       "dependencies": {},
       "hash": "c5101c07762251edc82caad9e8a39d51b1229c31"
     },
+    "com.unity.2d.sprite": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {}
+    },
     "com.unity.burst": {
       "version": "1.8.17",
-      "depth": 1,
+      "depth": 2,
       "source": "registry",
       "dependencies": {
         "com.unity.mathematics": "1.2.1",
         "com.unity.modules.jsonserialize": "1.0.0"
       },
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.collab-proxy": {
-      "version": "2.4.4",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {},
       "url": "https://packages.unity.com"
     },
     "com.unity.collections": {
@@ -45,37 +44,14 @@
     },
     "com.unity.ext.nunit": {
       "version": "2.0.5",
-      "depth": 2,
+      "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
-    "com.unity.feature.development": {
-      "version": "1.0.2",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.ide.visualstudio": "2.0.22",
-        "com.unity.ide.rider": "3.0.31",
-        "com.unity.editorcoroutines": "1.0.0",
-        "com.unity.performance.profile-analyzer": "1.2.2",
-        "com.unity.test-framework": "1.4.5",
-        "com.unity.testtools.codecoverage": "1.2.6"
-      }
-    },
-    "com.unity.feature.vr": {
-      "version": "1.0.1",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.xr.interaction.toolkit": "3.0.4",
-        "com.unity.xr.oculus": "4.2.0",
-        "com.unity.xr.openxr": "1.11.0"
-      }
-    },
     "com.unity.ide.rider": {
       "version": "3.0.31",
-      "depth": 1,
+      "depth": 0,
       "source": "registry",
       "dependencies": {
         "com.unity.ext.nunit": "1.0.6"
@@ -84,7 +60,7 @@
     },
     "com.unity.ide.visualstudio": {
       "version": "2.0.22",
-      "depth": 1,
+      "depth": 0,
       "source": "registry",
       "dependencies": {
         "com.unity.test-framework": "1.1.9"
@@ -100,19 +76,16 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.unity.learn.iet-framework": {
-      "version": "4.0.0",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.editorcoroutines": "1.0.0",
-        "com.unity.settings-manager": "1.0.3"
-      },
-      "url": "https://packages.unity.com"
-    },
     "com.unity.mathematics": {
       "version": "1.3.2",
-      "depth": 2,
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.mobile.android-logcat": {
+      "version": "1.4.2",
+      "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -124,9 +97,9 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
-    "com.unity.performance.profile-analyzer": {
-      "version": "1.2.2",
-      "depth": 1,
+    "com.unity.nuget.newtonsoft-json": {
+      "version": "3.2.1",
+      "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -174,34 +147,9 @@
         "com.unity.modules.terrain": "1.0.0"
       }
     },
-    "com.unity.scripting.python": {
-      "version": "7.0.1",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {},
-      "url": "https://packages.unity.com"
-    },
     "com.unity.searcher": {
       "version": "4.9.2",
       "depth": 2,
-      "source": "registry",
-      "dependencies": {},
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.sentis": {
-      "version": "1.6.0-pre.1",
-      "depth": 1,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.burst": "1.8.12",
-        "com.unity.collections": "1.2.4",
-        "com.unity.modules.imageconversion": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.settings-manager": {
-      "version": "2.0.1",
-      "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -236,46 +184,14 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.unity.testtools.codecoverage": {
-      "version": "1.2.6",
-      "depth": 1,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.test-framework": "1.0.16",
-        "com.unity.settings-manager": "1.0.1"
-      },
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.timeline": {
-      "version": "1.8.7",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.modules.audio": "1.0.0",
-        "com.unity.modules.director": "1.0.0",
-        "com.unity.modules.animation": "1.0.0",
-        "com.unity.modules.particlesystem": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
-    },
     "com.unity.ugui": {
       "version": "2.0.0",
-      "depth": 1,
+      "depth": 0,
       "source": "builtin",
       "dependencies": {
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
-    },
-    "com.unity.visualscripting": {
-      "version": "1.9.4",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.ugui": "1.0.0",
-        "com.unity.modules.jsonserialize": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
     },
     "com.unity.xr.arcore": {
       "version": "6.0.3",
@@ -305,6 +221,18 @@
         "com.unity.modules.particlesystem": "1.0.0",
         "com.unity.modules.unityanalytics": "1.0.0",
         "com.unity.modules.unitywebrequest": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.xr.arkit": {
+      "version": "6.0.3",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.xr.core-utils": "2.2.2",
+        "com.unity.xr.management": "4.4.0",
+        "com.unity.xr.arfoundation": "6.0.3",
+        "com.unity.editorcoroutines": "1.0.0"
       },
       "url": "https://packages.unity.com"
     },
@@ -345,7 +273,7 @@
     },
     "com.unity.xr.management": {
       "version": "4.4.0",
-      "depth": 0,
+      "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.modules.vr": "1.0.0",
@@ -355,12 +283,15 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.unity.xr.oculus": {
-      "version": "4.2.0",
-      "depth": 1,
+    "com.unity.xr.meta-openxr": {
+      "version": "2.0.1",
+      "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.xr.management": "4.4.0"
+        "com.unity.xr.openxr": "1.10.0",
+        "com.unity.xr.core-utils": "2.3.0",
+        "com.unity.xr.management": "4.4.0",
+        "com.unity.xr.arfoundation": "6.0.1"
       },
       "url": "https://packages.unity.com"
     },
@@ -375,31 +306,6 @@
         "com.unity.xr.legacyinputhelpers": "2.1.2"
       },
       "url": "https://packages.unity.com"
-    },
-    "jp.co.hololab.dnn.base": {
-      "version": "https://github.com/HoloLabInc/HoloLabDnnPackages.git?path=packages/jp.co.hololab.dnn.base",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {
-        "com.unity.sentis": "1.6.0-pre.1"
-      },
-      "hash": "b8b7b1679a94da37aaeb5d49409f07661df66583"
-    },
-    "jp.co.hololab.dnn.objectdetection": {
-      "version": "https://github.com/HoloLabInc/HoloLabDnnPackages.git?path=packages/jp.co.hololab.dnn.objectdetection",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {
-        "com.unity.sentis": "1.6.0-pre.1",
-        "jp.co.hololab.dnn.base": "1.0.3"
-      },
-      "hash": "b8b7b1679a94da37aaeb5d49409f07661df66583"
-    },
-    "com.unity.modules.accessibility": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {}
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
