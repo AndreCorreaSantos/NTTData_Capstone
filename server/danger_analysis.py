@@ -77,7 +77,7 @@ async def run_analyzer():
 
     while True:
         await asyncio.sleep(6)
-        analyze_all_images_in_dir("./CapturedImages/", azure_client)
+        analyze_all_images_in_dir("./gpt/", azure_client)
 
 async def save_captured_image(image, output_name):
     cv2.imwrite(output_name, image, [int(cv2.IMWRITE_WEBP_QUALITY), 60])
