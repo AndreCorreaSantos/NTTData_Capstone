@@ -3,6 +3,7 @@ import base64
 import os
 import re
 import asyncio
+import locks
 
 # Function to encode the image
 def encode_image(image_path):
@@ -50,19 +51,20 @@ def analyze_image(image_path, azure_client):
     print(completion.choices[0].message)
 
 
-def get_all_images_from_dir(path_to_dir):
-    regex = re.compile('.*\.(jpe?g|png)$')
-    f_matches = []
+async def get_all_images_from_dir(path_to_dir):
+    async with locks.file_lock:
+        regex = re.compile('.*\.(jpe?g|png)$')
+        f_matches = []
 
-    for root, dirs, files in os.walk(path_to_dir):
-        for file in files:
-            if regex.match(file):
-                f_matches.append(file)
-    return f_matches
+        for root, dirs, files in os.walk(path_to_dir):
+            for file in files:
+                if regex.match(file):
+                    f_matches.append(file)
+        return f_matches
 
 
-def analyze_all_images_in_dir(path_to_dir, client):
-    images = get_all_images_from_dir(path_to_dir)
+async def analyze_all_images_in_dir(path_to_dir, client):
+    images = await get_all_images_from_dir(path_to_dir)
     for image in images:
         analyze_image(path_to_dir + image, client)
 
@@ -75,7 +77,7 @@ async def run_analyzer():
 
     while True:
         await asyncio.sleep(6)
-        analyze_all_images_in_dir("./gpt/", azure_client)
+        await analyze_all_images_in_dir("./gpt/", azure_client)
 
 if __name__ == "__main__":
     asyncio.run(run_analyzer())

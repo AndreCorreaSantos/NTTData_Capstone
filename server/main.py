@@ -10,6 +10,8 @@ from ultralytics import YOLO
 import json
 import base64
 import aiofiles
+import os
+import locks
 
 import asyncio
 from image_processing import process_image, calculate_background_colors
@@ -28,10 +30,14 @@ latest_depth_frame = None
 PERSON_CLASS_NAME = "person"
 
 async def write_to_file_async(path, image_data):
-    image_as_jpeg_buffer = io.BytesIO()
-    image_data.save(image_as_jpeg_buffer, format="JPEG")
-    async with aiofiles.open(path, "wb") as file:
-        await file.write(image_as_jpeg_buffer.getbuffer())
+    async with locks.file_lock:
+        temp_path = path + '.tmp'
+        image_as_jpeg_buffer = io.BytesIO()
+        image_data.save(image_as_jpeg_buffer, format="JPEG")
+        async with aiofiles.open(temp_path, "wb") as file:
+            await file.write(image_as_jpeg_buffer.getbuffer())
+        # Rename the temporary file to the actual file name after writing is complete
+        os.rename(temp_path, path)
 
 @app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
