@@ -4,6 +4,8 @@ import os
 import re
 import asyncio
 import locks
+from fastapi import WebSocket
+import json
 
 # Function to encode the image
 def encode_image(image_path):
@@ -11,7 +13,7 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 
-def analyze_image(image_path, azure_client):
+async def analyze_image(image_path, azure_client, websocket: WebSocket | None):
     base64_image = encode_image(image_path)
 
     completion = azure_client.chat.completions.create(
@@ -48,7 +50,14 @@ def analyze_image(image_path, azure_client):
             }
         ]
     )
-    print(completion.choices[0].message)
+    message = completion.choices[0].message
+    print(message)
+    if websocket is not None:
+        try:
+            await websocket.send_text(json.dumps(message))
+        except Exception as e:
+            print(f"Error: {e}")
+
 
 
 async def get_all_images_from_dir(path_to_dir):
@@ -63,13 +72,13 @@ async def get_all_images_from_dir(path_to_dir):
         return f_matches
 
 
-async def analyze_all_images_in_dir(path_to_dir, client):
+async def analyze_all_images_in_dir(path_to_dir, client, websocket: WebSocket | None):
     images = await get_all_images_from_dir(path_to_dir)
     for image in images:
-        analyze_image(path_to_dir + image, client)
+        await analyze_image(path_to_dir + image, client, websocket)
 
 
-async def run_analyzer():
+async def run_analyzer(websocket: WebSocket | None):
 
     azure_client = AzureOpenAI(
         api_version="2023-03-15-preview"
@@ -77,7 +86,8 @@ async def run_analyzer():
 
     while True:
         await asyncio.sleep(6)
-        await analyze_all_images_in_dir("./gpt/", azure_client)
+        await analyze_all_images_in_dir("./gpt/", azure_client, websocket)
+
 
 if __name__ == "__main__":
-    asyncio.run(run_analyzer())
+    asyncio.run(run_analyzer(None))
