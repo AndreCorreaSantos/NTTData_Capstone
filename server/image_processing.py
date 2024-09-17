@@ -109,37 +109,53 @@ def process_image(current_frame, detection, rotation, position, fx, fy, cx, cy, 
     return None
 ######################## CASE 2 #############################
 
+import cv2
+import numpy as np
+
 def calculate_background_colors(image):
+    # Calculate the mean color of the image in BGR
     mean_color_bgr = cv2.mean(image)[:3]
     mean_color_bgr_np = np.uint8([[mean_color_bgr]])
+    
+    # Convert mean color to LAB color space
     mean_color_lab = cv2.cvtColor(mean_color_bgr_np, cv2.COLOR_BGR2LAB)
-    L, a, b = mean_color_lab[0, 0]
-    L_scaled = L * (100 / 255)
-
-    delta_L = 27
-    if L_scaled > 50:
-        L_new = max(0, L_scaled - delta_L)
+    L_mean, a_mean, b_mean = mean_color_lab[0, 0]
+    
+    # Define the desired difference in L component
+    delta_L = 63  # Adjust this value as needed for contrast
+    
+    if L_mean >= delta_L:
+        # For images where we can subtract delta_L without going below 0
+        L_back = L_mean - delta_L
     else:
-        L_new = min(100, L_scaled + delta_L)
+        # If L_mean is less than delta_L, set background to 0 (black)
+        L_back = 0
 
-    L_new_scaled = L_new * (255 / 100)
-    new_color_lab = np.uint8([[[L_new_scaled, a, b]]])
-    new_color_bgr = cv2.cvtColor(new_color_lab, cv2.COLOR_LAB2BGR)
+    if L_mean + delta_L <= 255:
+        # For images where we can add delta_L without exceeding 255
+        L_text = L_mean + delta_L
+    else:
+        # If L_mean + delta_L exceeds 255, set text to 255 (white)
+        L_text = 255
+
+    # Create background color (darker than mean color)
+    back_color_lab = np.uint8([[[L_back, a_mean, b_mean]]])
+    back_color_bgr = cv2.cvtColor(back_color_lab, cv2.COLOR_LAB2BGR)
     gui_back_color = (
-        int(new_color_bgr[0, 0, 2]),
-        int(new_color_bgr[0, 0, 1]),
-        int(new_color_bgr[0, 0, 0])
+        int(back_color_bgr[0, 0, 2]),  # R
+        int(back_color_bgr[0, 0, 1]),  # G
+        int(back_color_bgr[0, 0, 0])   # B
     )
-
-    L_white_new = min(100, L_scaled + delta_L)
-    L_white_scaled = L_white_new * (255 / 100)
-    white_color_lab = np.uint8([[[L_white_scaled, 0, 0]]])
-    white_color_bgr = cv2.cvtColor(white_color_lab, cv2.COLOR_LAB2BGR)
+    
+    # Create text color (lighter than mean color)
+    text_color_lab = np.uint8([[[L_text, a_mean, b_mean]]])
+    text_color_bgr = cv2.cvtColor(text_color_lab, cv2.COLOR_LAB2BGR)
     gui_text_color = (
-        int(white_color_bgr[0, 0, 2]),
-        int(white_color_bgr[0, 0, 1]),
-        int(white_color_bgr[0, 0, 0])
+        int(text_color_bgr[0, 0, 2]),  # R
+        int(text_color_bgr[0, 0, 1]),  # G
+        int(text_color_bgr[0, 0, 0])   # B
     )
-
+    
     return gui_back_color, gui_text_color
+
 #################################################################

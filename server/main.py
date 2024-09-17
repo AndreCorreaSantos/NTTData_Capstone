@@ -40,8 +40,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
     try:
-        loop = asyncio.get_running_loop()
-        asyncio.create_task(danger_analysis.run_analyzer())
+        # loop = asyncio.get_running_loop()
+        # asyncio.create_task(danger_analysis.run_analyzer())
         while True:
             json_message = await websocket.receive_text()
             data = json.loads(json_message)
@@ -65,7 +65,7 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 image_data_bytes = base64.b64decode(image_data_base64)
                 image = Image.open(io.BytesIO(image_data_bytes))
-                asyncio.create_task(write_to_file_async(f"./gpt/captured_image_{now.strftime('%m-%d-%Y-%H-%M-%S')}.jpg", image))
+                # asyncio.create_task(write_to_file_async(f"./gpt/captured_image_{now.strftime('%m-%d-%Y-%H-%M-%S')}.jpg", image))
 
                 image_np = np.array(image)
             except Exception as e:
