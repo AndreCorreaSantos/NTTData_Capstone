@@ -131,6 +131,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         }
                     },
                     "object_positions": object_positions if object_positions else None  # List or None
+                
                 }
 
                 # Send the response back to the client
