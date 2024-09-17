@@ -88,6 +88,5 @@ async def run_analyzer(websocket: WebSocket | None):
         await asyncio.sleep(6)
         await analyze_all_images_in_dir("./gpt/", azure_client, websocket)
 
-
 if __name__ == "__main__":
     asyncio.run(run_analyzer(None))
