@@ -39,6 +39,17 @@ async def write_to_file_async(path, image_data):
         # Rename the temporary file to the actual file name after writing is complete
         os.rename(temp_path, path)
 
+@app.websocket("/danger/")
+async def websocket_danger_detection(websocket: WebSocket):
+    await websocket.accept()
+
+    try:
+        asyncio.create_task(danger_analysis.run_analyzer(websocket))
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+
 @app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
     global latest_depth_frame
@@ -47,7 +58,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         loop = asyncio.get_running_loop()
-        asyncio.create_task(danger_analysis.run_analyzer())
+        asyncio.create_task(danger_analysis.run_analyzer(None))
         while True:
             json_message = await websocket.receive_text()
             data = json.loads(json_message)
@@ -122,6 +133,12 @@ async def websocket_endpoint(websocket: WebSocket):
                                     })
 
                 # Prepare the combined JSON message
+                '''DELETAR: PORQUE NÃO COLOCAR A INFORMAÇÃO DO GPT AQUI:
+                ELE É ASINCRONO EM RELAÇÃO AO RESTO DO PROGRAMA.
+                esperar ele pra mandar nesse mesmo request daria um problema, 
+                já que teria que esperar a resposta da openai pra mandar o resto.
+                vou tentar criar um endpoint novo só pra stream de dados do caso 3, já 
+                que não faz sentido tratar dele aqui'''
                 frame_data_message = {
                     "type": "frame_data",
                     "gui_colors": {
