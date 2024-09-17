@@ -3,7 +3,6 @@ import base64
 import os
 import re
 import asyncio
-import cv2
 
 # Function to encode the image
 def encode_image(image_path):
@@ -71,13 +70,12 @@ def analyze_all_images_in_dir(path_to_dir, client):
 async def run_analyzer():
 
     azure_client = AzureOpenAI(
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         api_version="2023-03-15-preview"
     )
 
     while True:
         await asyncio.sleep(6)
-        analyze_all_images_in_dir("./CapturedImages/", azure_client)
+        analyze_all_images_in_dir("./gpt/", azure_client)
 
-async def save_captured_image(image, output_name):
-    cv2.imwrite(output_name, image, [int(cv2.IMWRITE_WEBP_QUALITY), 60])
+if __name__ == "__main__":
+    asyncio.run(run_analyzer())

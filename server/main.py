@@ -9,17 +9,29 @@ import io
 from ultralytics import YOLO
 import json
 import base64
+import aiofiles
 
+import asyncio
 from image_processing import process_image, calculate_background_colors
+
+import danger_analysis
+from datetime import datetime
 
 app = FastAPI()
 model = YOLO("yolov8n.pt")
+now = datetime.now()
 
 # Initialize a variable to store the latest depth frame (optional)
 latest_depth_frame = None
 
 # Define the class name for "person" (adjust based on your YOLO model's classes)
 PERSON_CLASS_NAME = "person"
+
+async def write_to_file_async(path, image_data):
+    image_as_jpeg_buffer = io.BytesIO()
+    image_data.save(image_as_jpeg_buffer, format="JPEG")
+    async with aiofiles.open(path, "wb") as file:
+        await file.write(image_as_jpeg_buffer.getbuffer())
 
 @app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
@@ -28,6 +40,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
     try:
+        loop = asyncio.get_running_loop()
+        asyncio.create_task(danger_analysis.run_analyzer())
         while True:
             json_message = await websocket.receive_text()
             data = json.loads(json_message)
@@ -35,6 +49,7 @@ async def websocket_endpoint(websocket: WebSocket):
             image_type = data.get('type')
             image_data_base64 = data.get('imageData')
             position = data.get('position')
+            # print("Position: ", position)   
             rotation = data.get('rotation')
             fx = data.get('fx')  # Camera intrinsic fx
             fy = data.get('fy')  # Camera intrinsic fy
@@ -50,6 +65,8 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 image_data_bytes = base64.b64decode(image_data_base64)
                 image = Image.open(io.BytesIO(image_data_bytes))
+                asyncio.create_task(write_to_file_async(f"./gpt/captured_image_{now.strftime('%m-%d-%Y-%H-%M-%S')}.jpg", image))
+
                 image_np = np.array(image)
             except Exception as e:
                 print(f"Failed to decode image data: {e}")

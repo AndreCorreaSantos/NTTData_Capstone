@@ -10,9 +10,11 @@ public class ClientLogic : MonoBehaviour
 
     public RawImage colorImage;
     public RawImage depthImage;
-    public Transform playerTransform;
+    public Camera playerCamera; // Updated to include playerCamera
     public GameObject UICanvas;
     public GameObject anchorPrefab;
+
+    public GameObject debugPrefab;
 
     private GameObject uiCanvasInstance;
 
@@ -24,11 +26,13 @@ public class ClientLogic : MonoBehaviour
 
     private List<GameObject> anchors = new List<GameObject>();
 
+    private GameObject debug;
+
     void Start()
     {
         StartWebSocket();
         SpawnUI();
-
+        debug = Instantiate(debugPrefab, Vector3.zero, Quaternion.identity);
         connection.OnServerMessage += HandleServerMessage;
     }
 
@@ -103,6 +107,8 @@ public class ClientLogic : MonoBehaviour
                 frameData.object_position.y,
                 frameData.object_position.z
             );
+            
+            debug.transform.position = objectPosition;
             SpawnAnchor(objectPosition);
         }
         else
@@ -122,7 +128,7 @@ public class ClientLogic : MonoBehaviour
                 if (anchor != null)
                 {
                     float distance = Vector3.Distance(position, anchor.transform.position);
-                    if (distance <= 1.0f)
+                    if (distance <= 0.1f)
                     {
                         anchorNearby = true;
                         break;
@@ -138,7 +144,7 @@ public class ClientLogic : MonoBehaviour
                 Anchor anchorScript = newAnchor.GetComponent<Anchor>();
                 if (anchorScript != null)
                 {
-                    anchorScript.playerTransform = playerTransform;
+                    anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
                 }
                 else
                 {
@@ -160,28 +166,47 @@ public class ClientLogic : MonoBehaviour
 
     private async void SendDataAsync()
     {
-        if (colorImageBytes != null)
+        if (colorImageBytes != null && colorImage.texture is Texture2D colorTex)
         {
-            await SendImageDataAsync("color", colorImageBytes);
+            await SendImageDataAsync("color", colorImageBytes, colorTex.width, colorTex.height);
         }
 
-        if (depthImageBytes != null)
+        if (depthImageBytes != null && depthImage.texture is Texture2D depthTex)
         {
-            await SendImageDataAsync("depth", depthImageBytes);
+            await SendImageDataAsync("depth", depthImageBytes, depthTex.width, depthTex.height);
         }
     }
 
-    private async Task SendImageDataAsync(string imageType, byte[] imageBytes)
+    private async Task SendImageDataAsync(string imageType, byte[] imageBytes, int imageWidth, int imageHeight)
     {
-        Vector3 pos = playerTransform.position;
-        Quaternion rot = playerTransform.rotation;
+        Vector3 pos = playerCamera.transform.position;
+        Quaternion rot = playerCamera.transform.rotation;
+
+        // Calculate camera intrinsics
+        float verticalFOV = playerCamera.fieldOfView; // in degrees
+        float aspectRatio = playerCamera.aspect; // width / height
+
+        // Convert FOV from degrees to radians
+        float verticalFOVRad = verticalFOV * Mathf.Deg2Rad;
+
+        // Compute focal lengths
+        float fy = (imageHeight / 2f) / Mathf.Tan(verticalFOVRad / 2f);
+        float fx = fy * aspectRatio;
+
+        // Principal points (assuming center of the image)
+        float cx = imageWidth / 2f;
+        float cy = imageHeight / 2f;
 
         ImageDataMessage dataObject = new ImageDataMessage
         {
             type = imageType,
             position = new PositionData { x = pos.x, y = pos.y, z = pos.z },
             rotation = new RotationData { x = rot.x, y = rot.y, z = rot.z, w = rot.w },
-            imageData = System.Convert.ToBase64String(imageBytes)
+            imageData = System.Convert.ToBase64String(imageBytes),
+            fx = fx,
+            fy = fy,
+            cx = cx,
+            cy = cy
         };
 
         string jsonString = JsonUtility.ToJson(dataObject);
@@ -190,8 +215,8 @@ public class ClientLogic : MonoBehaviour
 
     private void SpawnUI()
     {
-        uiCanvasInstance = Instantiate(UICanvas, playerTransform.position + playerTransform.forward * 2, playerTransform.rotation);
-        uiCanvasInstance.transform.LookAt(playerTransform);
+        uiCanvasInstance = Instantiate(UICanvas, playerCamera.transform.position + playerCamera.transform.forward * 2, playerCamera.transform.rotation);
+        uiCanvasInstance.transform.LookAt(playerCamera.transform);
 
         SetLayerRecursively(uiCanvasInstance, 30);
     }
@@ -282,4 +307,10 @@ public class ImageDataMessage
     public PositionData position;
     public RotationData rotation;
     public string imageData;
+    
+    // New fields for camera intrinsics
+    public float fx;
+    public float fy;
+    public float cx;
+    public float cy;
 }

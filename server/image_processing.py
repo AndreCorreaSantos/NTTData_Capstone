@@ -99,6 +99,7 @@ def process_image(current_frame, detection, rotation, position, fx, fy, cx, cy, 
                 'y': float(world_coords[1]),
                 'z': float(world_coords[2])
             }
+            print(f"Object position: {object_position}")
             return object_position
 
     except Exception as e:
