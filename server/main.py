@@ -31,7 +31,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
     try:
-        asyncio.run(danger_analysis.run_analyzer())
+        loop = asyncio.get_running_loop()
+        asyncio.create_task(danger_analysis.run_analyzer())
         while True:
             json_message = await websocket.receive_text()
             data = json.loads(json_message)
@@ -45,7 +46,7 @@ async def websocket_endpoint(websocket: WebSocket):
             image = Image.open(io.BytesIO(image_data_bytes))
             image_np = np.array(image)
 
-            asyncio.run(write_to_file_async(f"./gpt/captured_image_{now.strftime("%m/%d/%Y, %H:%M:%S")}", image))
+            asyncio.create_task(write_to_file_async(f"./gpt/captured_image_{now.strftime("%m/%d/%Y, %H:%M:%S")}", image))
 
             if image_type == "color":
                 current_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
