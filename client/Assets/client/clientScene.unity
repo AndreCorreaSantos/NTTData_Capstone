@@ -671,6 +671,8 @@ MonoBehaviour:
     type: 3}
   anchorPrefab: {fileID: 293106963504090463, guid: 0cb5484528d6c61449e779108195461b,
     type: 3}
+  debugPrefab: {fileID: 3972324793378278113, guid: eeecbaae858e2994fbee3241ff46dde3,
+    type: 3}
 --- !u!114 &700190882
 MonoBehaviour:
   m_ObjectHideFlags: 0
