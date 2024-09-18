@@ -39,6 +39,7 @@ async def write_to_file_async(path, image_data):
         # Rename the temporary file to the actual file name after writing is complete
         os.rename(temp_path, path)
 
+"""
 @app.websocket("/danger/")
 async def websocket_danger_detection(websocket: WebSocket):
     await websocket.accept()
@@ -47,6 +48,7 @@ async def websocket_danger_detection(websocket: WebSocket):
         asyncio.create_task(danger_analysis.run_analyzer(websocket))
     except Exception as e:
         print(f"Error: {e}")
+"""
 
 
 
@@ -58,8 +60,9 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         loop = asyncio.get_running_loop()
-        asyncio.create_task(danger_analysis.run_analyzer(None))
+        asyncio.create_task(danger_analysis.run_analyzer(websocket))
         while True:
+
             json_message = await websocket.receive_text()
             data = json.loads(json_message)
 
@@ -154,12 +157,12 @@ async def websocket_endpoint(websocket: WebSocket):
                         }
                     },
                     "object_positions": object_positions if object_positions else None  # List or None
-                
                 }
 
                 # Send the response back to the client
                 try:
-                    await websocket.send_text(json.dumps(frame_data_message))
+                    async with locks.websocket_lock:
+                        await websocket.send_text(json.dumps(frame_data_message))
                 except Exception as e:
                     print(f"Failed to send frame data message: {e}")
 

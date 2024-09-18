@@ -32,8 +32,8 @@ async def analyze_image(image_path, azure_client, websocket: WebSocket | None):
                             If you find nothing that can be considered dangerous on the image, you must consider the danger level as LOW DANGER
                             You MUST only respond in the following format:
                             {
-                                DangerLevel: [level of danger detected on the image]
-                                DangerSource: [the source of danger, if detected. if none are detected, fill with NoDangerSources]
+                                "danger_level": "{level of danger detected on the image}",
+                                "danger_source": "{the source of danger, if detected. if none are detected, fill with NoDangerSources}"
                             }
 
 
@@ -51,10 +51,17 @@ async def analyze_image(image_path, azure_client, websocket: WebSocket | None):
         ]
     )
     message = completion.choices[0].message
-    print(message)
+    json_message = json.loads("{ \"title\": \"danger_analysis\" \n, \"content\":" + message.content + "\n}")
+    try:
+        print(json_message)
+    except Exception as e:
+        print(f"Erro {e}")
+    
     if websocket is not None:
+        print("sending to websocket")
         try:
-            await websocket.send_text(json.dumps(message))
+            async with locks.websocket_lock:
+                await websocket.send_text(json.dumps(message.content))
         except Exception as e:
             print(f"Error: {e}")
 
