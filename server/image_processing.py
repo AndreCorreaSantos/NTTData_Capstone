@@ -19,8 +19,8 @@ def process_image(current_frame, detection, rotation, position, fx, fy, cx, cy, 
     Parameters:
     - current_frame: The current color frame as a NumPy array.
     - detection: A single detection dictionary from YOLO.
-    - rotation: Dictionary containing rotation data (x, y, z, w).
-    - position: Dictionary containing position data (x, y, z).
+    - rotation: Dictionary containing camera rotation data (x, y, z, w).
+    - position: Dictionary containing camera position data (x, y, z).
     - fx, fy: Focal lengths.
     - cx, cy: Principal points.
     - depth_image: The corresponding depth frame as a NumPy array (can be None).
@@ -48,7 +48,7 @@ def process_image(current_frame, detection, rotation, position, fx, fy, cx, cy, 
         x = (box_values[0] + box_values[2]) / 2
         y = (box_values[1] + box_values[3]) / 2
         cv2.circle(current_frame, (int(x), int(y)), 5, (0, 0, 255), -1)
-
+        print(f"Detected object at ({x}, {y})")
         # Extract depth from the depth_image at (x, y) if available
         if depth_image is not None:
             x_int = int(round(x))
@@ -65,48 +65,46 @@ def process_image(current_frame, detection, rotation, position, fx, fy, cx, cy, 
                 depth = 1.5  # Default depth
         else:
             # Use default depth if no depth image is provided
-            depth = 2.0
+            depth = 1.5
 
+        depth = 5.0
+
+        print(f"Camera intrinsics: fx={fx}, fy={fy}, cx={cx}, cy={cy}")
         # Normalize image coordinates
         x_normalized = (x - cx) / fx
         y_normalized = (y - cy) / fy
 
-        # Convert to camera coordinates
-        camera_coords = np.array([
+        obj_camspace = np.array([
             x_normalized * depth,
             y_normalized * depth,
             depth
         ])
 
-        if rotation and position:
-            # Extract rotation and position
-            qx = rotation.get('x', 0)
-            qy = rotation.get('y', 0)
-            qz = rotation.get('z', 0)
-            qw = rotation.get('w', 1)
-            px = position.get('x', 0)
-            py = position.get('y', 0)
-            pz = position.get('z', 0)
+        # Extract rotation and position
+        qx = rotation.get('x', 0)
+        qy = rotation.get('y', 0)
+        qz = rotation.get('z', 0)
+        qw = rotation.get('w', 1)
+        px = position.get('x', 0)
+        py = position.get('y', 0)
+        pz = position.get('z', 0)
 
-            # Convert quaternion to rotation matrix
-            rotation_matrix = quaternion_to_rotation_matrix(qx, qy, qz, qw)
+        # Convert quaternion to rotation matrix and transpose it
+        rotation_matrix = quaternion_to_rotation_matrix(qx, qy, qz, qw).T
 
-            # Transform camera coordinates to world coordinates
-            world_coords = rotation_matrix @ camera_coords + np.array([px, py, pz])
+        # Transform camera coordinates to world coordinates
+        world_coords = rotation_matrix @ obj_camspace + np.array([px, py, pz])
 
-            object_position = {
-                'x': float(world_coords[0]),
-                'y': float(world_coords[1]),
-                'z': float(world_coords[2])
-            }
-            print(f"Object position: {object_position}")
-            return object_position
+        object_position = {
+            'x': float(world_coords[0]),
+            'y': float(world_coords[1]),
+            'z': float(world_coords[2])
+        }
+        return object_position
 
     except Exception as e:
         print(f"Error in process_image: {e}")
         return None
-
-    return None
 ######################## CASE 2 #############################
 
 import cv2
