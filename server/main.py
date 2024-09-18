@@ -95,7 +95,6 @@ async def websocket_endpoint(websocket: WebSocket):
                         # Assuming result_json is a list of detections
                         for det in result_json:
                             # Check if the detected class is "person"
-                            print(det["name"])
                             if(det["name"] == "person"):
                                 object_position = process_image(
                                     current_frame,
@@ -108,6 +107,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                     cy,
                                     latest_depth_frame  # Can be None
                                 )
+                                # print("Object Position: ", object_position)
                                 if object_position:
                                     object_positions.append({
                                         "x": object_position['x'],
@@ -135,6 +135,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 }
 
                 # Send the response back to the client
+                print("frame_data_message")
+                print(frame_data_message)
                 try:
                     await websocket.send_text(json.dumps(frame_data_message))
                 except Exception as e:
