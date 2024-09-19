@@ -30,8 +30,9 @@ async def analyze_image(image_path, azure_client, websocket: WebSocket | None):
                             You must consider things like open fires, step hazards, and things of that nature things of IMMEDIATE DANGER
                             Tou must consider things like potential flames, hazardous materials, train tracks, and other potential dangers as POTENTIAL DANGER
                             If you find nothing that can be considered dangerous on the image, you must consider the danger level as LOW DANGER
-                            You MUST only respond in the following format:
+                            You MUST only respond in the format of a valid json, as formatted below. DO NOT add json to the start of the message:
                             {
+                                "type" : "danger_analysis"
                                 "danger_level": "{level of danger detected on the image}",
                                 "danger_source": "{the source of danger, if detected. if none are detected, fill with NoDangerSources}"
                             }
@@ -50,18 +51,14 @@ async def analyze_image(image_path, azure_client, websocket: WebSocket | None):
             }
         ]
     )
-    message = completion.choices[0].message
-    json_message = json.loads("{ \"title\": \"danger_analysis\" \n, \"content\":" + message.content + "\n}")
-    try:
-        print(json_message)
-    except Exception as e:
-        print(f"Erro {e}")
+    message = completion.choices[0].message.content
+    print(message)
     
     if websocket is not None:
         print("sending to websocket")
         try:
             async with locks.websocket_lock:
-                await websocket.send_text(json.dumps(message.content))
+                await websocket.send_text(message)
         except Exception as e:
             print(f"Error: {e}")
 
