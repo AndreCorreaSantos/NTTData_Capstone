@@ -47,4 +47,3 @@ sysinfo.txt
 .DS_Store
 
 env/
-server/.venv
