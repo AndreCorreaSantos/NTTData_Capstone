@@ -29,6 +29,8 @@ public class ClientLogic : MonoBehaviour
     private float timeSinceLastSend = 0f;
     private float sendInterval = 0.5f;
 
+    private Vector3[] UIScreenCorners = new Vector3[4];
+
     private List<GameObject> anchors = new List<GameObject>();
 
     private GameObject debug;
@@ -49,6 +51,15 @@ public class ClientLogic : MonoBehaviour
         {
             timeSinceLastSend = 0f;
 
+            Vector3[] UIWorldCorners = new Vector3[4];
+            uiCanvasInstance.transform.GetChild(1).gameObject.GetComponent<RectTransform>().GetWorldCorners(UIWorldCorners);
+            for (int i = 0; i < UIWorldCorners.Length; i++)
+            {
+                Vector3 UIscreenCorner = playerCamera.WorldToScreenPoint(UIWorldCorners[i]);
+                UIScreenCorners[i] = UIscreenCorner;
+                Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
+            }
+
             Texture2D colorTexture = ConvertToTexture2D(colorImage.texture);
             Texture2D depthTexture = ConvertToTexture2D(depthImage.texture);
 
@@ -66,6 +77,7 @@ public class ClientLogic : MonoBehaviour
         }
 
         anchors.RemoveAll(anchor => anchor == null);
+
     }
 
     private void HandeServerMessageDangerDetection(string message)
@@ -84,9 +96,9 @@ public class ClientLogic : MonoBehaviour
         }
         dangerLevel.text = dangerData.danger_level;
         dangerSource.text = dangerData.danger_source;
-}
+    }
 
-private void HandleServerMessage(string message)
+    private void HandleServerMessage(string message)
     {
         //Debug.Log("Received from server: " + message);
 
@@ -131,7 +143,7 @@ private void HandleServerMessage(string message)
                 frameData.object_position.y,
                 frameData.object_position.z
             );
-            
+
             debug.transform.position = objectPosition;
             SpawnAnchor(objectPosition);
         }
@@ -230,7 +242,8 @@ private void HandleServerMessage(string message)
             fx = fx,
             fy = fy,
             cx = cx,
-            cy = cy
+            cy = cy,
+            UIScreenCorners = UIScreenCorners
         };
 
         string jsonString = JsonUtility.ToJson(dataObject);
@@ -294,11 +307,11 @@ public class FrameDataMessage
 
 [System.Serializable]
 public class DangerDataMessage
- {
-     public string type;
-     public string danger_level;
-     public string danger_source;
- }
+{
+    public string type;
+    public string danger_level;
+    public string danger_source;
+}
 
 [System.Serializable]
 public class GuiColorsData
@@ -339,10 +352,11 @@ public class ImageDataMessage
     public PositionData position;
     public RotationData rotation;
     public string imageData;
-    
+
     // New fields for camera intrinsics
     public float fx;
     public float fy;
     public float cx;
     public float cy;
+    public Vector3[] UIScreenCorners;
 }
