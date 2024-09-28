@@ -16,7 +16,7 @@ import locks
 import asyncio
 from image_processing import process_image, calculate_background_colors
 
-import danger_analysis
+# import danger_analysis
 from datetime import datetime
 
 app = FastAPI()
