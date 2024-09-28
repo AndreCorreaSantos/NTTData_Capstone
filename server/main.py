@@ -65,6 +65,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             json_message = await websocket.receive_text()
             data = json.loads(json_message)
+            #print("Received message:", data)
 
             image_type = data.get('type')
             image_data_base64 = data.get('imageData')
@@ -75,6 +76,8 @@ async def websocket_endpoint(websocket: WebSocket):
             fy = data.get('fy')  # Camera intrinsic fy
             cx = data.get('cx')  # Camera principal point x
             cy = data.get('cy')  # Camera principal point y
+            UIScreenCorners = data.get('UIScreenCorners')
+            #print("UIScreenCorners: ", UIScreenCorners)
 
             # Validate essential fields
             if image_type is None or image_data_base64 is None:
@@ -97,7 +100,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 current_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
                 # Calculate GUI colors
-                gui_back_color, gui_text_color = calculate_background_colors(current_frame)
+                gui_back_color, gui_text_color,roi = calculate_background_colors(current_frame, UIScreenCorners)
 
                 # Initialize list to hold positions of all detected persons
                 object_positions = []
@@ -167,8 +170,14 @@ async def websocket_endpoint(websocket: WebSocket):
                     print(f"Failed to send frame data message: {e}")
 
                 # Display the color image (optional, useful for debugging)
-                cv2.imshow("Color Image", current_frame)
-                cv2.waitKey(1)
+               
+                if roi is not None and roi.shape[0] > 0 and roi.shape[1] > 0:
+                    cv2.imshow("Interior ROI", roi)
+                    cv2.waitKey(1)
+                else:
+                    print("Interior ROI is empty")
+                """ cv2.imshow("Color Image", image_np)
+                cv2.waitKey(1) """
 
             elif image_type == "depth":
                 # Store the latest depth frame
