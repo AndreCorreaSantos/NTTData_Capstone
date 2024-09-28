@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using TMPro;
 
 public class ClientLogic : MonoBehaviour
 {
@@ -13,6 +14,10 @@ public class ClientLogic : MonoBehaviour
     public Camera playerCamera; // Updated to include playerCamera
     public GameObject UICanvas;
     public GameObject anchorPrefab;
+
+    public GameObject NotiffBlock;
+    public TMP_Text dangerLevel;
+    public TMP_Text dangerSource;
 
     public GameObject debugPrefab;
 
@@ -63,14 +68,33 @@ public class ClientLogic : MonoBehaviour
         anchors.RemoveAll(anchor => anchor == null);
     }
 
-    private void HandleServerMessage(string message)
+    private void HandeServerMessageDangerDetection(string message)
     {
-        Debug.Log("Received from server: " + message);
+        Debug.LogWarning("Received from server: " + message);
+
+        DangerDataMessage dangerData = JsonUtility.FromJson<DangerDataMessage>(message);
+        if (dangerData == null)
+        {
+            Debug.LogWarning("Invalid danger analysis data received from server");
+            return;
+        }
+        if (dangerData.danger_level != "LOW DANGER")
+        {
+            NotiffBlock.SetActive(true);
+        }
+        dangerLevel.text = dangerData.danger_level;
+        dangerSource.text = dangerData.danger_source;
+}
+
+private void HandleServerMessage(string message)
+    {
+        //Debug.Log("Received from server: " + message);
 
         FrameDataMessage frameData = JsonUtility.FromJson<FrameDataMessage>(message);
         if (frameData == null || frameData.type != "frame_data")
         {
             Debug.LogWarning("Invalid message received from server.");
+            HandeServerMessageDangerDetection(message);
             return;
         }
 
@@ -271,6 +295,14 @@ public class FrameDataMessage
     public GuiColorsData gui_colors;
     public PositionData object_position;
 }
+
+[System.Serializable]
+public class DangerDataMessage
+ {
+     public string type;
+     public string danger_level;
+     public string danger_source;
+ }
 
 [System.Serializable]
 public class GuiColorsData
