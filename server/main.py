@@ -10,6 +10,8 @@ from ultralytics import YOLO
 import json
 import base64
 import aiofiles
+import os
+import locks
 
 import asyncio
 from image_processing import process_image, calculate_background_colors
@@ -28,10 +30,27 @@ latest_depth_frame = None
 PERSON_CLASS_NAME = "person"
 
 async def write_to_file_async(path, image_data):
-    image_as_jpeg_buffer = io.BytesIO()
-    image_data.save(image_as_jpeg_buffer, format="JPEG")
-    async with aiofiles.open(path, "wb") as file:
-        await file.write(image_as_jpeg_buffer.getbuffer())
+    async with locks.file_lock:
+        temp_path = path + '.tmp'
+        image_as_jpeg_buffer = io.BytesIO()
+        image_data.save(image_as_jpeg_buffer, format="JPEG")
+        async with aiofiles.open(temp_path, "wb") as file:
+            await file.write(image_as_jpeg_buffer.getbuffer())
+        # Rename the temporary file to the actual file name after writing is complete
+        os.rename(temp_path, path)
+
+"""
+@app.websocket("/danger/")
+async def websocket_danger_detection(websocket: WebSocket):
+    await websocket.accept()
+
+    try:
+        asyncio.create_task(danger_analysis.run_analyzer(websocket))
+    except Exception as e:
+        print(f"Error: {e}")
+"""
+
+
 
 @app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
@@ -41,8 +60,9 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         # loop = asyncio.get_running_loop()
-        # asyncio.create_task(danger_analysis.run_analyzer())
+        # asyncio.create_task(danger_analysis.run_analyzer(websocket))
         while True:
+
             json_message = await websocket.receive_text()
             data = json.loads(json_message)
 
@@ -116,6 +136,12 @@ async def websocket_endpoint(websocket: WebSocket):
                                     })
 
                 # Prepare the combined JSON message
+                '''DELETAR: PORQUE NÃO COLOCAR A INFORMAÇÃO DO GPT AQUI:
+                ELE É ASINCRONO EM RELAÇÃO AO RESTO DO PROGRAMA.
+                esperar ele pra mandar nesse mesmo request daria um problema, 
+                já que teria que esperar a resposta da openai pra mandar o resto.
+                vou tentar criar um endpoint novo só pra stream de dados do caso 3, já 
+                que não faz sentido tratar dele aqui'''
                 frame_data_message = {
                     "type": "frame_data",
                     "gui_colors": {
@@ -131,14 +157,14 @@ async def websocket_endpoint(websocket: WebSocket):
                         }
                     },
                     "object_positions": object_positions if object_positions else None  # List or None
-                
                 }
 
                 # Send the response back to the client
                 print("frame_data_message")
                 print(frame_data_message)
                 try:
-                    await websocket.send_text(json.dumps(frame_data_message))
+                    async with locks.websocket_lock:
+                        await websocket.send_text(json.dumps(frame_data_message))
                 except Exception as e:
                     print(f"Failed to send frame data message: {e}")
 
