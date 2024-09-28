@@ -59,8 +59,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
     try:
-        loop = asyncio.get_running_loop()
-        asyncio.create_task(danger_analysis.run_analyzer(websocket))
+        # loop = asyncio.get_running_loop()
+        # asyncio.create_task(danger_analysis.run_analyzer(websocket))
         while True:
 
             json_message = await websocket.receive_text()
@@ -88,7 +88,7 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 image_data_bytes = base64.b64decode(image_data_base64)
                 image = Image.open(io.BytesIO(image_data_bytes))
-                asyncio.create_task(write_to_file_async(f"./gpt/captured_image_{now.strftime('%m-%d-%Y-%H-%M-%S')}.jpg", image))
+                # asyncio.create_task(write_to_file_async(f"./gpt/captured_image_{now.strftime('%m-%d-%Y-%H-%M-%S')}.jpg", image))
 
                 image_np = np.array(image)
             except Exception as e:
@@ -118,7 +118,6 @@ async def websocket_endpoint(websocket: WebSocket):
                         # Assuming result_json is a list of detections
                         for det in result_json:
                             # Check if the detected class is "person"
-                            print(det["name"])
                             if(det["name"] == "person"):
                                 object_position = process_image(
                                     current_frame,
@@ -131,6 +130,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                     cy,
                                     latest_depth_frame  # Can be None
                                 )
+                                # print("Object Position: ", object_position)
                                 if object_position:
                                     object_positions.append({
                                         "x": object_position['x'],
@@ -163,6 +163,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 }
 
                 # Send the response back to the client
+                print("frame_data_message")
+                print(frame_data_message)
                 try:
                     async with locks.websocket_lock:
                         await websocket.send_text(json.dumps(frame_data_message))

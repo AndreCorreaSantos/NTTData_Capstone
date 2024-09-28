@@ -124,6 +124,8 @@ public class ClientLogic : MonoBehaviour
                 frameData.gui_colors.text_color.b / 255f
             );
 
+            Color black = new Color(0, 0, 0);
+
             setColors colorSetter = uiCanvasInstance.GetComponent<setColors>();
             if (colorSetter != null)
             {
@@ -252,8 +254,10 @@ public class ClientLogic : MonoBehaviour
 
     private void SpawnUI()
     {
-        uiCanvasInstance = Instantiate(UICanvas, playerCamera.transform.position + playerCamera.transform.forward * 2, playerCamera.transform.rotation);
-        uiCanvasInstance.transform.LookAt(playerCamera.transform);
+        Vector3 pos = new Vector3(-0.75999999f,0.569999993f,0.460000008f);
+        Vector3 rot = new Vector3(0.0f, 180.0f, 0.0f);
+        uiCanvasInstance = Instantiate(UICanvas, pos, Quaternion.Euler(rot));
+        // uiCanvasInstance.transform.LookAt(playerCamera.transform);
 
         SetLayerRecursively(uiCanvasInstance, 30);
     }
