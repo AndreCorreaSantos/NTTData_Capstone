@@ -9,8 +9,9 @@ def quaternion_to_rotation_matrix(qx, qy, qz, qw):
         [2*(qx*qz - qy*qw),         2*(qy*qz + qx*qw),     1 - 2*(qx**2 + qy**2)]
     ])
 
-def process_image(current_frame, detection, rotation, position, fx, fy, cx, cy, depth_image):
+def process_image(current_frame,depth_image, detection, rotation, position, fx, fy, cx, cy, ):
     try:
+        print()
         box = detection.get('box')
         if not box:
             print("No bounding box found in detection.")
