@@ -209,7 +209,7 @@ def calculate_background_colors(image, UIScreenCorners):
         L_new = max(0, L_scaled - delta_L)
     else:
         # If L_mean is less than delta_L, set background to 0 (black)
-        L_back = 0
+        L_new = 0
 
     # Scale the adjusted L back to the range suitable for LAB
     L_new_scaled = L_new * (255 / 100)

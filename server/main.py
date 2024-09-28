@@ -101,6 +101,11 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 # Calculate GUI colors
                 gui_back_color, gui_text_color,roi = calculate_background_colors(current_frame, UIScreenCorners)
+                """ if roi is not None and roi.shape[0] > 0 and roi.shape[1] > 0:
+                    cv2.imshow("Interior ROI", roi)
+                    cv2.waitKey(1)
+                else:
+                    print("Interior ROI is empty") """ # Uncomment to display the interior ROI
 
                 # Initialize list to hold positions of all detected persons
                 object_positions = []
@@ -173,13 +178,9 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 # Display the color image (optional, useful for debugging)
                
-                if roi is not None and roi.shape[0] > 0 and roi.shape[1] > 0:
-                    cv2.imshow("Interior ROI", roi)
-                    cv2.waitKey(1)
-                else:
-                    print("Interior ROI is empty")
-                """ cv2.imshow("Color Image", image_np)
-                cv2.waitKey(1) """
+                
+                cv2.imshow("Color Image", current_frame)
+                cv2.waitKey(1)
 
             elif image_type == "depth":
                 # Store the latest depth frame
