@@ -16,17 +16,21 @@ import locks
 import asyncio
 from image_processing import process_image, calculate_background_colors
 
+from transformers import pipeline
+from PIL import Image
+
+depth_pipe = pipeline(task="depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf", device=0)
+
+
 # import danger_analysis
 from datetime import datetime
 
 app = FastAPI()
 model = YOLO("yolov8n.pt")
+
 now = datetime.now()
 
-# Initialize a variable to store the latest depth frame (optional)
-latest_depth_frame = None
 
-# Define the class name for "person" (adjust based on your YOLO model's classes)
 PERSON_CLASS_NAME = "person"
 
 async def write_to_file_async(path, image_data):
@@ -54,7 +58,6 @@ async def websocket_danger_detection(websocket: WebSocket):
 
 @app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
-    global latest_depth_frame
     print("WebSocket connection starting...")
     await websocket.accept()
 
@@ -105,11 +108,17 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Object detection using YOLO
                 results = model(current_frame, verbose=False)
 
+                # Depth estimation using Depth anything
+                depth_frame = np.array(depth_pipe(image)["depth"])
+                
+                # open another window to display the depth frame
+
+
                 # Iterate through all detections
                 
                 for detection in results:
                     if detection is not None:
-                        detection_json = detection.tojson()
+                        detection_json = detection.to_json()
                         result_json = json.loads(detection_json)
                         
                         # Assuming result_json is a list of detections
@@ -118,6 +127,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             if(det["name"] == "person"):
                                 object_position = process_image(
                                     current_frame,
+                                    depth_frame,
                                     det,  # Single detection
                                     rotation,
                                     position,
@@ -125,7 +135,6 @@ async def websocket_endpoint(websocket: WebSocket):
                                     fy,
                                     cx,
                                     cy,
-                                    latest_depth_frame  # Can be None
                                 )
                                 # print("Object Position: ", object_position)
                                 if object_position:
@@ -170,26 +179,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 # Display the color image (optional, useful for debugging)
                 cv2.imshow("Color Image", current_frame)
-                cv2.waitKey(1)
+                # depth_frame_normalized = cv2.normalize(depth_frame, None, 0, 255, cv2.NORM_MINMAX)
+                # depth_frame_normalized = np.uint8(depth_frame_normalized)
 
-            elif image_type == "depth":
-                # Store the latest depth frame
-                # Assuming depth image is grayscale or single-channel
-                if len(image_np.shape) == 3 and image_np.shape[2] > 1:
-                    # Convert to grayscale if it's a color image
-                    depth_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
-                else:
-                    depth_frame = image_np
-
-                # Normalize depth frame to float32 (assuming depth is encoded in 16-bit or similar)
-                depth_frame = depth_frame.astype(np.float32)
-                # Example normalization: scale depth to meters if needed
-                # Adjust the scaling factor based on your depth encoding
-                depth_frame /= 1000.0  # Example: if depth is in millimeters
-
-                latest_depth_frame = depth_frame
-
-                # Display the depth image (optional, useful for debugging)
+                # Display the depth image in another window
                 cv2.imshow("Depth Image", depth_frame)
                 cv2.waitKey(1)
 

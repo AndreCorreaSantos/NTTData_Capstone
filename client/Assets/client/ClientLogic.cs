@@ -112,8 +112,6 @@ private void HandleServerMessage(string message)
                 frameData.gui_colors.text_color.b / 255f
             );
 
-            Color black = new Color(0, 0, 0);
-
             setColors colorSetter = uiCanvasInstance.GetComponent<setColors>();
             if (colorSetter != null)
             {
@@ -125,69 +123,81 @@ private void HandleServerMessage(string message)
             }
         }
 
-        // Handle object position
-        if (frameData.object_position != null)
+        // Handle object positions
+        if (frameData.object_positions != null && frameData.object_positions.Count > 0)
         {
-            Vector3 objectPosition = new Vector3(
-                frameData.object_position.x,
-                frameData.object_position.y,
-                frameData.object_position.z
-            );
-            
-            debug.transform.position = objectPosition;
-            SpawnAnchor(objectPosition);
-        }
-        else
-        {
-            // No object detected in this frame; handle accordingly if needed
-        }
-    }
-
-    private void SpawnAnchor(Vector3 position)
-    {
-        if (anchorPrefab != null)
-        {
-            bool anchorNearby = false;
-
-            foreach (GameObject anchor in anchors)
+            foreach (PositionData positionData in frameData.object_positions)
             {
-                if (anchor != null)
+                if (positionData != null)
                 {
-                    float distance = Vector3.Distance(position, anchor.transform.position);
-                    if (distance <= 0.1f)
+                    Vector3 objectPosition = new Vector3(
+                        positionData.x,
+                        positionData.y,
+                        positionData.z
+                    );
+
+                    // Ignore positions at the origin
+                    if (objectPosition != Vector3.zero)
                     {
-                        anchorNearby = true;
-                        break;
+                        debug.transform.position = objectPosition;
+                        Debug.Log("ObjectPosition: " + objectPosition);
+                        SpawnAnchor(objectPosition);
                     }
                 }
             }
-
-            if (!anchorNearby)
-            {
-                GameObject newAnchor = Instantiate(anchorPrefab, position, Quaternion.identity);
-                newAnchor.layer = 30;
-
-                Anchor anchorScript = newAnchor.GetComponent<Anchor>();
-                if (anchorScript != null)
-                {
-                    anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
-                }
-                else
-                {
-                    Debug.LogWarning("Anchor component not found on the instantiated prefab.");
-                }
-
-                anchors.Add(newAnchor);
-            }
-            else
-            {
-                Debug.Log("An anchor already exists within 1.0 units. Not spawning a new one.");
-            }
         }
         else
         {
-            Debug.LogWarning("anchorPrefab is not assigned in the Inspector.");
+            Debug.LogWarning("No object positions received.");
         }
+    }
+    private void SpawnAnchor(Vector3 position)
+    {
+        // if (anchorPrefab != null)
+        // {
+        //     bool anchorNearby = false;
+
+        //     foreach (GameObject anchor in anchors)
+        //     {
+        //         if (anchor != null)
+        //         {
+        //             float distance = Vector3.Distance(position, anchor.transform.position);
+        //             if (distance <= 0.1f)
+        //             {
+        //                 anchorNearby = true;
+        //                 break;
+        //             }
+        //         }
+        //     }
+
+            // if (!anchorNearby)
+            // {
+        Debug.Log("spawning anchor");
+        Debug.Log("Position"+position);
+        GameObject newAnchor = Instantiate(anchorPrefab, position, Quaternion.identity);
+        newAnchor.layer = 30;
+
+        Anchor anchorScript = newAnchor.GetComponent<Anchor>();
+        if (anchorScript != null)
+        {
+            anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
+        }
+        else
+        {
+            Debug.LogWarning("Anchor component not found on the instantiated prefab.");
+        }
+
+        // anchors.Add(newAnchor);
+        //     }
+        //     else
+        //     {
+        //         Debug.Log("An anchor already exists within 1.0 units. Not spawning a new one.");
+        //     }
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("anchorPrefab is not assigned in the Inspector.");
+        // }
     }
 
     private async void SendDataAsync()
@@ -222,6 +232,8 @@ private void HandleServerMessage(string message)
         // Principal points (assuming center of the image)
         float cx = imageWidth / 2f;
         float cy = imageHeight / 2f;
+;
+    
 
         ImageDataMessage dataObject = new ImageDataMessage
         {
@@ -293,7 +305,7 @@ public class FrameDataMessage
 {
     public string type;
     public GuiColorsData gui_colors;
-    public PositionData object_position;
+    public List<PositionData> object_positions; // Updated to List
 }
 
 [System.Serializable]
