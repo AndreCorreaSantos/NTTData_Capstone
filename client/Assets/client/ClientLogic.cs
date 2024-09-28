@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using TMPro;
 
 public class ClientLogic : MonoBehaviour
 {
@@ -10,9 +11,15 @@ public class ClientLogic : MonoBehaviour
 
     public RawImage colorImage;
     public RawImage depthImage;
-    public Transform playerTransform;
+    public Camera playerCamera; // Updated to include playerCamera
     public GameObject UICanvas;
     public GameObject anchorPrefab;
+
+    public GameObject NotiffBlock;
+    public TMP_Text dangerLevel;
+    public TMP_Text dangerSource;
+
+    public GameObject debugPrefab;
 
     private GameObject uiCanvasInstance;
 
@@ -22,13 +29,17 @@ public class ClientLogic : MonoBehaviour
     private float timeSinceLastSend = 0f;
     private float sendInterval = 0.5f;
 
+    private Vector3[] UIScreenCorners = new Vector3[4];
+
     private List<GameObject> anchors = new List<GameObject>();
+
+    private GameObject debug;
 
     void Start()
     {
         StartWebSocket();
         SpawnUI();
-
+        debug = Instantiate(debugPrefab, Vector3.zero, Quaternion.identity);
         connection.OnServerMessage += HandleServerMessage;
     }
 
@@ -39,6 +50,15 @@ public class ClientLogic : MonoBehaviour
         if (timeSinceLastSend >= sendInterval && colorImage != null && depthImage != null && isWebSocketConnected)
         {
             timeSinceLastSend = 0f;
+
+            Vector3[] UIWorldCorners = new Vector3[4];
+            uiCanvasInstance.transform.GetChild(1).gameObject.GetComponent<RectTransform>().GetWorldCorners(UIWorldCorners);
+            for (int i = 0; i < UIWorldCorners.Length; i++)
+            {
+                Vector3 UIscreenCorner = playerCamera.WorldToScreenPoint(UIWorldCorners[i]);
+                UIScreenCorners[i] = UIscreenCorner;
+                Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
+            }
 
             Texture2D colorTexture = ConvertToTexture2D(colorImage.texture);
             Texture2D depthTexture = ConvertToTexture2D(depthImage.texture);
@@ -57,16 +77,36 @@ public class ClientLogic : MonoBehaviour
         }
 
         anchors.RemoveAll(anchor => anchor == null);
+
+    }
+
+    private void HandeServerMessageDangerDetection(string message)
+    {
+        Debug.LogWarning("Received from server: " + message);
+
+        DangerDataMessage dangerData = JsonUtility.FromJson<DangerDataMessage>(message);
+        if (dangerData == null)
+        {
+            Debug.LogWarning("Invalid danger analysis data received from server");
+            return;
+        }
+        if (dangerData.danger_level != "LOW DANGER")
+        {
+            NotiffBlock.SetActive(true);
+        }
+        dangerLevel.text = dangerData.danger_level;
+        dangerSource.text = dangerData.danger_source;
     }
 
     private void HandleServerMessage(string message)
     {
-        Debug.Log("Received from server: " + message);
+        //Debug.Log("Received from server: " + message);
 
         FrameDataMessage frameData = JsonUtility.FromJson<FrameDataMessage>(message);
         if (frameData == null || frameData.type != "frame_data")
         {
             Debug.LogWarning("Invalid message received from server.");
+            HandeServerMessageDangerDetection(message);
             return;
         }
 
@@ -83,6 +123,8 @@ public class ClientLogic : MonoBehaviour
                 frameData.gui_colors.text_color.g / 255f,
                 frameData.gui_colors.text_color.b / 255f
             );
+
+            Color black = new Color(0, 0, 0);
 
             setColors colorSetter = uiCanvasInstance.GetComponent<setColors>();
             if (colorSetter != null)
@@ -103,6 +145,8 @@ public class ClientLogic : MonoBehaviour
                 frameData.object_position.y,
                 frameData.object_position.z
             );
+
+            debug.transform.position = objectPosition;
             SpawnAnchor(objectPosition);
         }
         else
@@ -122,7 +166,7 @@ public class ClientLogic : MonoBehaviour
                 if (anchor != null)
                 {
                     float distance = Vector3.Distance(position, anchor.transform.position);
-                    if (distance <= 1.0f)
+                    if (distance <= 0.1f)
                     {
                         anchorNearby = true;
                         break;
@@ -138,7 +182,7 @@ public class ClientLogic : MonoBehaviour
                 Anchor anchorScript = newAnchor.GetComponent<Anchor>();
                 if (anchorScript != null)
                 {
-                    anchorScript.playerTransform = playerTransform;
+                    anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
                 }
                 else
                 {
@@ -160,28 +204,48 @@ public class ClientLogic : MonoBehaviour
 
     private async void SendDataAsync()
     {
-        if (colorImageBytes != null)
+        if (colorImageBytes != null && colorImage.texture is Texture2D colorTex)
         {
-            await SendImageDataAsync("color", colorImageBytes);
+            await SendImageDataAsync("color", colorImageBytes, colorTex.width, colorTex.height);
         }
 
-        if (depthImageBytes != null)
+        if (depthImageBytes != null && depthImage.texture is Texture2D depthTex)
         {
-            await SendImageDataAsync("depth", depthImageBytes);
+            await SendImageDataAsync("depth", depthImageBytes, depthTex.width, depthTex.height);
         }
     }
 
-    private async Task SendImageDataAsync(string imageType, byte[] imageBytes)
+    private async Task SendImageDataAsync(string imageType, byte[] imageBytes, int imageWidth, int imageHeight)
     {
-        Vector3 pos = playerTransform.position;
-        Quaternion rot = playerTransform.rotation;
+        Vector3 pos = playerCamera.transform.position;
+        Quaternion rot = playerCamera.transform.rotation;
+
+        // Calculate camera intrinsics
+        float verticalFOV = playerCamera.fieldOfView; // in degrees
+        float aspectRatio = playerCamera.aspect; // width / height
+
+        // Convert FOV from degrees to radians
+        float verticalFOVRad = verticalFOV * Mathf.Deg2Rad;
+
+        // Compute focal lengths
+        float fy = (imageHeight / 2f) / Mathf.Tan(verticalFOVRad / 2f);
+        float fx = fy * aspectRatio;
+
+        // Principal points (assuming center of the image)
+        float cx = imageWidth / 2f;
+        float cy = imageHeight / 2f;
 
         ImageDataMessage dataObject = new ImageDataMessage
         {
             type = imageType,
             position = new PositionData { x = pos.x, y = pos.y, z = pos.z },
             rotation = new RotationData { x = rot.x, y = rot.y, z = rot.z, w = rot.w },
-            imageData = System.Convert.ToBase64String(imageBytes)
+            imageData = System.Convert.ToBase64String(imageBytes),
+            fx = fx,
+            fy = fy,
+            cx = cx,
+            cy = cy,
+            UIScreenCorners = UIScreenCorners
         };
 
         string jsonString = JsonUtility.ToJson(dataObject);
@@ -190,8 +254,10 @@ public class ClientLogic : MonoBehaviour
 
     private void SpawnUI()
     {
-        uiCanvasInstance = Instantiate(UICanvas, playerTransform.position + playerTransform.forward * 2, playerTransform.rotation);
-        uiCanvasInstance.transform.LookAt(playerTransform);
+        Vector3 pos = new Vector3(-0.75999999f,0.569999993f,0.460000008f);
+        Vector3 rot = new Vector3(0.0f, 180.0f, 0.0f);
+        uiCanvasInstance = Instantiate(UICanvas, pos, Quaternion.Euler(rot));
+        // uiCanvasInstance.transform.LookAt(playerCamera.transform);
 
         SetLayerRecursively(uiCanvasInstance, 30);
     }
@@ -244,6 +310,14 @@ public class FrameDataMessage
 }
 
 [System.Serializable]
+public class DangerDataMessage
+{
+    public string type;
+    public string danger_level;
+    public string danger_source;
+}
+
+[System.Serializable]
 public class GuiColorsData
 {
     public ColorData background_color;
@@ -282,4 +356,11 @@ public class ImageDataMessage
     public PositionData position;
     public RotationData rotation;
     public string imageData;
+
+    // New fields for camera intrinsics
+    public float fx;
+    public float fy;
+    public float cx;
+    public float cy;
+    public Vector3[] UIScreenCorners;
 }
