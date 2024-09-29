@@ -124,10 +124,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 gui_back_color, gui_text_color = calculate_background_colors(current_frame)
 
                 # Initialize list to hold positions of all detected persons
-                object_positions = []
+                objects_data = []
 
                 # Object detection using YOLO
-                results = model(current_frame, verbose=False)
+                results = model.track(current_frame, verbose=False,persist=True)
 
                 # Depth estimation using Depth anything
                 depth_frame = depth_model.infer_image(image_np)
@@ -137,10 +137,10 @@ async def websocket_endpoint(websocket: WebSocket):
                     if detection is not None:
                         detection_json = detection.to_json()
                         result_json = json.loads(detection_json)
-                        
-                        # Assuming result_json is a list of detections
+                        # print("Result JSON: ", result_json) 
+                        # Assuming result_json is a list of detections      
                         for det in result_json:
-                            
+                            print("Det: ", det)
                             # Check if the detected class is "person"
                             if(det["name"] == "person"):
                                 print("Person detected")
@@ -157,11 +157,17 @@ async def websocket_endpoint(websocket: WebSocket):
                                 )
                                 # print("Object Position: ", object_position)
                                 if object_position:
-                                    object_positions.append({
+                                    obj_id = "-1"
+                                    if det.get('track_id') is not None:
+                                        obj_id = det['track_id'] 
+                                    
+                                    objects_data.append({
                                         "x": object_position['x'],
                                         "y": object_position['y'],
-                                        "z": object_position['z']
+                                        "z": object_position['z'],
+                                        "id": obj_id
                                     })
+                            
 
                 # Prepare the combined JSON message
                 '''DELETAR: PORQUE NÃO COLOCAR A INFORMAÇÃO DO GPT AQUI:
@@ -184,7 +190,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             "b": gui_text_color[2]
                         }
                     },
-                    "object_positions": object_positions if object_positions else None  # List or None
+                    "objects": objects_data if objects_data else None  # List or None
                 }
 
                 # Send the response back to the client

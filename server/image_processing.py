@@ -28,7 +28,7 @@ def process_image(current_frame, depth_image, detection, rotation, position, fx,
 
         height,width,channels = current_frame.shape
         object_position = {
-            'x': int(x),
+            'x': int(width- x),
             'y': int(height - y),
             'z': float(depth)
         }
