@@ -811,8 +811,6 @@ MonoBehaviour:
   NotiffBlock: {fileID: 1315485181}
   dangerLevel: {fileID: 1946530151}
   dangerSource: {fileID: 1111367581}
-  debugPrefab: {fileID: 3972324793378278113, guid: eeecbaae858e2994fbee3241ff46dde3,
-    type: 3}
 --- !u!114 &700190882
 MonoBehaviour:
   m_ObjectHideFlags: 0

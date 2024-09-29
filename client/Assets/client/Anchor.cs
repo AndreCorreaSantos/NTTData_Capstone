@@ -15,13 +15,15 @@ public class Anchor : MonoBehaviour
     private float timeSinceLastRaycast = 0f;
     public float raycastInterval = 0.2f; // Raycast every 0.2 seconds
 
-    private LineRenderer lineRenderer;
+    public GameObject linePrefab;
+    public GameObject lineInstance;
 
     public string id;
 
+    private bool DebugMode = true;
+
     void Start()
     {
-        lineRenderer = GetComponent<LineRenderer>();
         StartCoroutine(SelfDestroy());
 
         // Optional: Check if playerTransform is assigned
@@ -29,13 +31,18 @@ public class Anchor : MonoBehaviour
         {
             Debug.LogWarning("PlayerTransform is not assigned in Anchor. Please assign it from ClientLogic.");
         }
+        if(DebugMode)
+        {
+            lineInstance = Instantiate(linePrefab, transform.position, Quaternion.identity);
+        }
     }
 
     IEnumerator SelfDestroy()
     {
         yield return new WaitForSeconds(3);
         client.DeleteAnchor(id);
-        Destroy(gameObject,0);
+        Destroy(lineInstance);
+        Destroy(gameObject);
     }
 
     void Update()
@@ -72,8 +79,10 @@ public class Anchor : MonoBehaviour
                     Debug.Log("Anchor raycast did not hit anything.");
                 }
 
-                lineRenderer.SetPosition(0, transform.position);
-                lineRenderer.SetPosition(1, playerTransform.position);
+                if(DebugMode)
+                {
+                    UpdateLine();
+                }
             }
         }
         else
@@ -81,4 +90,24 @@ public class Anchor : MonoBehaviour
             Debug.LogWarning("PlayerTransform is not assigned in Anchor.");
         }
     }
+
+    private void UpdateLine()
+    {
+        Vector3 directionToPlayer = (playerTransform.position - transform.position);
+        float distance = directionToPlayer.magnitude;
+
+        // Set the position halfway between the anchor and the player
+        lineInstance.transform.position = transform.position + directionToPlayer / 2;
+
+        // Scale the cylinder to match the distance
+        lineInstance.transform.localScale = new Vector3(0.05f, distance / 2.2f, 0.05f);
+
+        // Rotate the cylinder to face the player, making sure the Y-axis is aligned
+        lineInstance.transform.rotation = Quaternion.FromToRotation(Vector3.up, directionToPlayer);
+    }
+
+
 }
+
+
+
