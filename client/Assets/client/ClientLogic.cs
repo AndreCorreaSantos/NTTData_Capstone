@@ -29,7 +29,7 @@ public class ClientLogic : MonoBehaviour
     private float timeSinceLastSend = 0f;
     private float sendInterval = 0.5f;
 
-    private List<GameObject> anchors = new List<GameObject>();
+    public Dictionary<string, GameObject> anchors = new Dictionary<string, GameObject>();
 
     private GameObject debug;
 
@@ -65,7 +65,7 @@ public class ClientLogic : MonoBehaviour
             SendDataAsync();
         }
 
-        anchors.RemoveAll(anchor => anchor == null);
+        // anchors.RemoveAll(anchor => anchor == null);
     }
 
     private void HandeServerMessageDangerDetection(string message)
@@ -124,17 +124,19 @@ private void HandleServerMessage(string message)
         }
 
         // Handle object positions
-        if (frameData.object_positions != null && frameData.object_positions.Count > 0)
+        if (frameData.objects != null && frameData.objects.Count > 0)
         {
-            foreach (PositionData positionData in frameData.object_positions)
+            foreach (ObjectData ObjectData in frameData.objects)
             {
-                if (positionData != null)
+                if (ObjectData != null)
                 {
                     Vector3 objectPosition = new Vector3(
-                        positionData.x,
-                        positionData.y,
-                        positionData.z
+                        ObjectData.x,
+                        ObjectData.y,
+                        ObjectData.z
                     );
+
+                    string id = ObjectData.id;
 
 
 
@@ -143,7 +145,7 @@ private void HandleServerMessage(string message)
                     {
                         debug.transform.position = objectPosition;
                         Debug.Log("ObjectPosition: " + objectPosition);
-                        SpawnAnchor(objectPosition);
+                        SpawnAnchor(objectPosition,id);
                     }
                 }
             }
@@ -153,55 +155,35 @@ private void HandleServerMessage(string message)
             Debug.LogWarning("No object positions received.");
         }
     }
-    private void SpawnAnchor(Vector3 position)
+    private void SpawnAnchor(Vector3 position,string id)
     {
-        // if (anchorPrefab != null)
-        // {
-        //     bool anchorNearby = false;
+        Vector3 worldPosition = playerCamera.ScreenToWorldPoint(position);
 
-        //     foreach (GameObject anchor in anchors)
-        //     {
-        //         if (anchor != null)
-        //         {
-        //             float distance = Vector3.Distance(position, anchor.transform.position);
-        //             if (distance <= 0.1f)
-        //             {
-        //                 anchorNearby = true;
-        //                 break;
-        //             }
-        //         }
-        //     }
+    
 
-            // if (!anchorNearby)
-            // {
+        // check if anchor already exists --> set position
+        if (anchors.ContainsKey(id))
+        {
+            Debug.Log("Anchor already exists");
+            GameObject anchor = anchors[id];
+            anchor.transform.position = worldPosition;
+            return;
+        }
 
+        
+        GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
+        anchors.Add(id, newAnchor);
+        newAnchor.layer = 30;
+        Anchor anchorScript = newAnchor.GetComponent<Anchor>();
+        if (anchorScript != null)
+        {
+            anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
+        }
+        else
+        {
+            Debug.LogWarning("Anchor component not found on the instantiated prefab.");
+            }
 
-                Vector3 worldPosition = playerCamera.ScreenToWorldPoint(position);
-                GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
-                newAnchor.layer = 30;
-                Debug.Log("spawning anchor");
-                Debug.Log("Position"+worldPosition);
-                Anchor anchorScript = newAnchor.GetComponent<Anchor>();
-                if (anchorScript != null)
-                {
-                    anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
-                }
-                else
-                {
-                    Debug.LogWarning("Anchor component not found on the instantiated prefab.");
-                }
-
-        // anchors.Add(newAnchor);
-        //     }
-        //     else
-        //     {
-        //         Debug.Log("An anchor already exists within 1.0 units. Not spawning a new one.");
-        //     }
-        // }
-        // else
-        // {
-        //     Debug.LogWarning("anchorPrefab is not assigned in the Inspector.");
-        // }
     }
 
     private async void SendDataAsync()
@@ -242,7 +224,7 @@ private void HandleServerMessage(string message)
         ImageDataMessage dataObject = new ImageDataMessage
         {
             type = imageType,
-            position = new PositionData { x = pos.x, y = pos.y, z = pos.z },
+            data = new ObjectData { x = pos.x, y = pos.y, z = pos.z,id = "Null" },
             rotation = new RotationData { x = rot.x, y = rot.y, z = rot.z, w = rot.w },
             imageData = System.Convert.ToBase64String(imageBytes),
             fx = fx,
@@ -309,7 +291,7 @@ public class FrameDataMessage
 {
     public string type;
     public GuiColorsData gui_colors;
-    public List<PositionData> object_positions; // Updated to List
+    public List<ObjectData> objects; // Updated to List
 }
 
 [System.Serializable]
@@ -336,11 +318,12 @@ public class ColorData
 }
 
 [System.Serializable]
-public class PositionData
+public class ObjectData
 {
     public float x;
     public float y;
     public float z;
+    public string id;
 }
 
 [System.Serializable]
@@ -356,7 +339,7 @@ public class RotationData
 public class ImageDataMessage
 {
     public string type;
-    public PositionData position;
+    public ObjectData data; 
     public RotationData rotation;
     public string imageData;
     
