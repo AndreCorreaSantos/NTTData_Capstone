@@ -376,7 +376,11 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+<<<<<<< HEAD
   m_AdditionalShaderChannelsFlag: 25
+=======
+  m_AdditionalShaderChannelsFlag: 0
+>>>>>>> main
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -402,7 +406,10 @@ RectTransform:
   - {fileID: 1268340790}
   - {fileID: 642201223}
   - {fileID: 1756864493}
+<<<<<<< HEAD
   - {fileID: 1315485182}
+=======
+>>>>>>> main
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -634,6 +641,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_CameraManager: {fileID: 1117847926}
+<<<<<<< HEAD
 --- !u!1 &643106613
 GameObject:
   m_ObjectHideFlags: 0
@@ -770,6 +778,8 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 643106613}
   m_CullTransparentMesh: 1
+=======
+>>>>>>> main
 --- !u!1 &700190880
 GameObject:
   m_ObjectHideFlags: 0
@@ -803,6 +813,7 @@ MonoBehaviour:
   connection: {fileID: 700190882}
   colorImage: {fileID: 1474869893}
   depthImage: {fileID: 613839500}
+<<<<<<< HEAD
   playerCamera: {fileID: 1521453280}
   UICanvas: {fileID: 2120919482074514956, guid: 35ea9b6a29d76144281daaa6dbb072ba,
     type: 3}
@@ -812,6 +823,12 @@ MonoBehaviour:
   dangerLevel: {fileID: 1946530151}
   dangerSource: {fileID: 1111367581}
   debugPrefab: {fileID: 3972324793378278113, guid: eeecbaae858e2994fbee3241ff46dde3,
+=======
+  playerTransform: {fileID: 1308392572}
+  UICanvas: {fileID: 2120919482074514956, guid: 35ea9b6a29d76144281daaa6dbb072ba,
+    type: 3}
+  anchorPrefab: {fileID: 3972324793378278113, guid: eeecbaae858e2994fbee3241ff46dde3,
+>>>>>>> main
     type: 3}
 --- !u!114 &700190882
 MonoBehaviour:
@@ -825,7 +842,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80d5185a9d36f8b43aa2487813fef5f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+<<<<<<< HEAD
   url: ws://localhost:8000
+=======
+  url: ws://192.168.0.25:8000
+>>>>>>> main
 --- !u!4 &700190883
 Transform:
   m_ObjectHideFlags: 0
@@ -1041,7 +1062,11 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
+<<<<<<< HEAD
   m_IsActive: 0
+=======
+  m_IsActive: 1
+>>>>>>> main
 --- !u!224 &901906344
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1492,6 +1517,7 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+<<<<<<< HEAD
 --- !u!1 &1111367579
 GameObject:
   m_ObjectHideFlags: 0
@@ -1628,6 +1654,8 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1111367579}
   m_CullTransparentMesh: 1
+=======
+>>>>>>> main
 --- !u!1001 &1117847925
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1711,11 +1739,14 @@ PrefabInstance:
       propertyPath: near clip plane
       value: 0.1
       objectReference: {fileID: 0}
+<<<<<<< HEAD
     - target: {fileID: 8766024634595469703, guid: 8f2c1ffdafd49a943ac79dc0ff480220,
         type: 3}
       propertyPath: m_CullingMask.m_Bits
       value: 4294967295
       objectReference: {fileID: 0}
+=======
+>>>>>>> main
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2252,6 +2283,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1303645216}
   m_CullTransparentMesh: 1
+<<<<<<< HEAD
 --- !u!1 &1315485181
 GameObject:
   m_ObjectHideFlags: 0
@@ -2331,6 +2363,14 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1315485181}
   m_CullTransparentMesh: 1
+=======
+--- !u!4 &1308392572 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8766024634595469698, guid: 8f2c1ffdafd49a943ac79dc0ff480220,
+    type: 3}
+  m_PrefabInstance: {fileID: 1117847925}
+  m_PrefabAsset: {fileID: 0}
+>>>>>>> main
 --- !u!1 &1323077986
 GameObject:
   m_ObjectHideFlags: 0
@@ -2691,12 +2731,15 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1474869891}
   m_CullTransparentMesh: 0
+<<<<<<< HEAD
 --- !u!20 &1521453280 stripped
 Camera:
   m_CorrespondingSourceObject: {fileID: 8766024634595469703, guid: 8f2c1ffdafd49a943ac79dc0ff480220,
     type: 3}
   m_PrefabInstance: {fileID: 1117847925}
   m_PrefabAsset: {fileID: 0}
+=======
+>>>>>>> main
 --- !u!224 &1756864493 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2304810881573073946, guid: 4ee22c1f54b174122b6a766fe09e0de8,
@@ -2790,6 +2833,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1791068494}
   m_CullTransparentMesh: 0
+<<<<<<< HEAD
 --- !u!1 &1946530149
 GameObject:
   m_ObjectHideFlags: 0
@@ -2926,6 +2970,8 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1946530149}
   m_CullTransparentMesh: 1
+=======
+>>>>>>> main
 --- !u!1 &2036965911
 GameObject:
   m_ObjectHideFlags: 0
@@ -3052,6 +3098,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ShowMaskGraphic: 0
+<<<<<<< HEAD
 --- !u!1 &2053598335
 GameObject:
   m_ObjectHideFlags: 0
@@ -3188,6 +3235,8 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2053598335}
   m_CullTransparentMesh: 1
+=======
+>>>>>>> main
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
