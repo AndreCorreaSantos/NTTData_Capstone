@@ -9,9 +9,8 @@ def quaternion_to_rotation_matrix(qx, qy, qz, qw):
         [2*(qx*qz - qy*qw),         2*(qy*qz + qx*qw),     1 - 2*(qx**2 + qy**2)]
     ])
 
-def process_image(current_frame,depth_image, detection, rotation, position, fx, fy, cx, cy, ):
+def process_image(current_frame, depth_image, detection, rotation, position, fx, fy, cx, cy):
     try:
-        print()
         box = detection.get('box')
         if not box:
             print("No bounding box found in detection.")
@@ -25,41 +24,35 @@ def process_image(current_frame,depth_image, detection, rotation, position, fx, 
         cv2.circle(current_frame, (int(x), int(y)), 5, (0, 0, 255), -1)
         print(f"Detected object at ({x}, {y})")
 
-        if depth_image is not None:
-            x_int = int(round(x))
-            y_int = int(round(y))
-
-            if (0 <= x_int < depth_image.shape[1]) and (0 <= y_int < depth_image.shape[0]):
-                depth = depth_image[y_int, x_int]
-                if depth <= 0:
-                    print(f"Invalid depth value at ({x_int}, {y_int}): {depth}. Using default depth.")
-                    depth = 1.5
-            else:
-                print(f"Coordinates ({x_int}, {y_int}) out of bounds for depth image. Using default depth.")
-                depth = 1.5
-        else:
-            depth = 1.5
-
+        # Use a fixed depth value for testing
         depth = 5.0
 
-        print(f"Camera intrinsics: fx={fx}, fy={fy}, cx={cx}, cy={cy}")
+        # Invert the y-coordinate to align coordinate systems
+        y_normalized = -(y - cy) / fy
         x_normalized = (x - cx) / fx
-        y_normalized = (y - cy) / fy
-
         obj_camspace = np.array([x_normalized * depth, y_normalized * depth, depth])
 
-        print(f"Camera rotation: {rotation}")
-        qx, qy, qz, qw = rotation.get('x', 0), rotation.get('y', 0), rotation.get('z', 0), rotation.get('w', 1)
-        norm = np.sqrt(qx*qx + qy*qy + qz*qz + qw*qw)
+        # Extract and normalize quaternion components
+        qw = rotation.get('w', 1)
+        qx = rotation.get('x', 0)
+        qy = rotation.get('y', 0)
+        qz = rotation.get('z', 0)
+
+        norm = np.sqrt(qw**2 + qx**2 + qy**2 + qz**2)
+        qw /= norm
         qx /= norm
         qy /= norm
         qz /= norm
-        qw /= norm
+
+        # Compute and transpose the rotation matrix
+        rotation_matrix = quaternion_to_rotation_matrix(qw, qx, qy, qz).T
+
+        # Camera position
         px = position.get('x', 0)
         py = position.get('y', 0)
         pz = position.get('z', 0)
 
-        rotation_matrix = quaternion_to_rotation_matrix(qx, qy, qz, qw).T
+        # Transform to world coordinates
         world_coords = rotation_matrix @ obj_camspace + np.array([px, py, pz])
 
         object_position = {
@@ -67,6 +60,7 @@ def process_image(current_frame,depth_image, detection, rotation, position, fx, 
             'y': float(world_coords[1]),
             'z': float(world_coords[2])
         }
+        print("Object Position: ", object_position)
         return object_position
 
     except Exception as e:
