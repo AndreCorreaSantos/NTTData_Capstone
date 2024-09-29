@@ -160,6 +160,12 @@ private void HandleServerMessage(string message)
             Debug.Log("Anchor already exists");
             GameObject anchor = anchors[id];
             anchor.transform.position = worldPosition;
+            // rotate ONLY y axis to face the camera
+            Vector3 targetPostition = new Vector3(playerCamera.transform.position.x,
+                                        anchor.transform.position.y,
+                                        playerCamera.transform.position.z);
+
+            anchor.transform.LookAt(targetPostition);
             return;
         }
 
