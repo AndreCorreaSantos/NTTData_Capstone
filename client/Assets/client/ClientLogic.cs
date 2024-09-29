@@ -157,7 +157,8 @@ private void HandleServerMessage(string message)
     }
     private void SpawnAnchor(Vector3 position,string id)
     {
-        Vector3 worldPosition = playerCamera.ScreenToWorldPoint(position);
+        // Vector3 worldPosition = playerCamera.ScreenToWorldPoint(position);
+        Vector3 worldPosition = position;
 
     
 
