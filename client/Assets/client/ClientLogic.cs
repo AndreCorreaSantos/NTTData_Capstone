@@ -11,15 +11,13 @@ public class ClientLogic : MonoBehaviour
 
     public RawImage colorImage;
     public RawImage depthImage;
-    public Camera playerCamera; // Updated to include playerCamera
+    public Camera playerCamera;
     public GameObject UICanvas;
     public GameObject anchorPrefab;
 
     public GameObject NotiffBlock;
     public TMP_Text dangerLevel;
     public TMP_Text dangerSource;
-
-    // public GameObject debugPrefab;
 
     private GameObject uiCanvasInstance;
 
@@ -31,13 +29,13 @@ public class ClientLogic : MonoBehaviour
 
     public Dictionary<string, GameObject> anchors = new Dictionary<string, GameObject>();
 
-    private GameObject debug;
+    // New variables for smooth UI movement
+    public float uiFollowSpeed = 5f; // Adjust this value to control follow speed
 
     void Start()
     {
         StartWebSocket();
         SpawnUI();
-        // debug = Instantiate(debugPrefab, Vector3.zero, Quaternion.identity);
         connection.OnServerMessage += HandleServerMessage;
     }
 
@@ -65,7 +63,50 @@ public class ClientLogic : MonoBehaviour
             SendDataAsync();
         }
 
-        // anchors.RemoveAll(anchor => anchor == null);
+        // Update the UI position every frame to keep it in front of the player
+        UpdateUIPosition();
+    }
+
+    private void UpdateUIPosition()
+    {
+        if (uiCanvasInstance != null && playerCamera != null)
+        {
+            // Desired position in front of the player
+            float distanceFromPlayer = 2.0f; // Adjust this value as needed
+            Vector3 forwardDirection = playerCamera.transform.forward;
+            Vector3 desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
+
+            // Smoothly move the UI towards the desired position
+            uiCanvasInstance.transform.position = Vector3.Lerp(
+                uiCanvasInstance.transform.position,
+                desiredPosition,
+                Time.deltaTime * uiFollowSpeed
+            );
+
+            // Compute the direction to the player, ignoring Y-axis differences
+            Vector3 directionToPlayer = playerCamera.transform.position - uiCanvasInstance.transform.position;
+            directionToPlayer.y = 0f; // Ignore vertical component to rotate only around Y-axis
+
+            // Check to avoid zero-length direction vector
+            if (directionToPlayer.sqrMagnitude > 0.001f)
+            {
+                // Compute the desired rotation only around Y-axis
+                Quaternion desiredRotation = Quaternion.LookRotation(directionToPlayer);
+
+                // Keep the original X and Z rotations
+                Vector3 currentEulerAngles = uiCanvasInstance.transform.eulerAngles;
+                float desiredYRotation = desiredRotation.eulerAngles.y;
+                Vector3 newEulerAngles = new Vector3(currentEulerAngles.x, desiredYRotation, currentEulerAngles.z);
+
+                // Smoothly rotate to the desired rotation
+                Quaternion targetRotation = Quaternion.Euler(newEulerAngles);
+                uiCanvasInstance.transform.rotation = Quaternion.Lerp(
+                    uiCanvasInstance.transform.rotation,
+                    targetRotation,
+                    Time.deltaTime * uiFollowSpeed
+                );
+            }
+        }
     }
 
     private void HandeServerMessageDangerDetection(string message)
@@ -84,12 +125,10 @@ public class ClientLogic : MonoBehaviour
         }
         dangerLevel.text = dangerData.danger_level;
         dangerSource.text = dangerData.danger_source;
-}
+    }
 
-private void HandleServerMessage(string message)
+    private void HandleServerMessage(string message)
     {
-        //Debug.Log("Received from server: " + message);
-
         FrameDataMessage frameData = JsonUtility.FromJson<FrameDataMessage>(message);
         if (frameData == null || frameData.type != "frame_data")
         {
@@ -137,7 +176,7 @@ private void HandleServerMessage(string message)
                     );
 
                     string id = ObjectData.id;
-                SpawnAnchor(objectPosition,id);
+                    SpawnAnchor(objectPosition, id);
                 }
                 else
                 {
@@ -145,38 +184,34 @@ private void HandleServerMessage(string message)
                 }
             }
         }
-        
     }
-    private void SpawnAnchor(Vector3 position,string id)
+
+    private void SpawnAnchor(Vector3 position, string id)
     {
-        // Vector3 worldPosition = playerCamera.ScreenToWorldPoint(position);
         Vector3 worldPosition = position;
 
-    
-
-        // check if anchor already exists --> set position
+        // Check if anchor already exists --> set position
         if (anchors.ContainsKey(id))
         {
             Debug.Log("Anchor already exists");
             GameObject anchor = anchors[id];
             anchor.transform.position = worldPosition;
-            // rotate ONLY y axis to face the camera
-            Vector3 targetPostition = new Vector3(playerCamera.transform.position.x,
-                                        anchor.transform.position.y,
-                                        playerCamera.transform.position.z);
 
-            anchor.transform.LookAt(targetPostition);
+            // Make the anchor face the player horizontally
+            Vector3 targetPosition = new Vector3(playerCamera.transform.position.x,
+                                                anchor.transform.position.y,
+                                                playerCamera.transform.position.z);
+
+            anchor.transform.LookAt(targetPosition);
             return;
         }
 
-        
         GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
         Anchor anchorScript = newAnchor.GetComponent<Anchor>();
         anchorScript.id = id;
         anchorScript.client = this;
         anchors.Add(id, newAnchor);
         newAnchor.layer = 30;
-        
 
         if (anchorScript != null)
         {
@@ -185,8 +220,7 @@ private void HandleServerMessage(string message)
         else
         {
             Debug.LogWarning("Anchor component not found on the instantiated prefab.");
-            }
-
+        }
     }
 
     public void DeleteAnchor(string id)
@@ -226,13 +260,11 @@ private void HandleServerMessage(string message)
         // Principal points (assuming center of the image)
         float cx = imageWidth / 2f;
         float cy = imageHeight / 2f;
-;
-    
 
         ImageDataMessage dataObject = new ImageDataMessage
         {
             type = imageType,
-            data = new ObjectData { x = pos.x, y = pos.y, z = pos.z,id = "Null" },
+            data = new ObjectData { x = pos.x, y = pos.y, z = pos.z, id = "Null" },
             rotation = new RotationData { x = rot.x, y = rot.y, z = rot.z, w = rot.w },
             imageData = System.Convert.ToBase64String(imageBytes),
             fx = fx,
@@ -247,12 +279,24 @@ private void HandleServerMessage(string message)
 
     private void SpawnUI()
     {
-        Vector3 pos = new Vector3(-0.75999999f,0.569999993f,0.460000008f);
-        Vector3 rot = new Vector3(0.0f, 180.0f, 0.0f);
-        uiCanvasInstance = Instantiate(UICanvas, pos, Quaternion.Euler(rot));
-        // uiCanvasInstance.transform.LookAt(playerCamera.transform);
+        if (playerCamera != null)
+        {
+            // Initial position in front of the player
+            float distanceFromPlayer = 2.0f; // Adjust this value as needed
+            Vector3 forwardDirection = playerCamera.transform.forward;
+            Vector3 initialPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
 
-        SetLayerRecursively(uiCanvasInstance, 30);
+            uiCanvasInstance = Instantiate(UICanvas, initialPosition, Quaternion.identity);
+
+            // Make the UI face the player
+            uiCanvasInstance.transform.rotation = Quaternion.LookRotation(uiCanvasInstance.transform.position - playerCamera.transform.position);
+
+            SetLayerRecursively(uiCanvasInstance, 30);
+        }
+        else
+        {
+            Debug.LogError("Player Camera is not assigned.");
+        }
     }
 
     private void SetLayerRecursively(GameObject obj, int layer)
@@ -299,16 +343,16 @@ public class FrameDataMessage
 {
     public string type;
     public GuiColorsData gui_colors;
-    public List<ObjectData> objects; // Updated to List
+    public List<ObjectData> objects;
 }
 
 [System.Serializable]
 public class DangerDataMessage
- {
-     public string type;
-     public string danger_level;
-     public string danger_source;
- }
+{
+    public string type;
+    public string danger_level;
+    public string danger_source;
+}
 
 [System.Serializable]
 public class GuiColorsData
@@ -347,11 +391,10 @@ public class RotationData
 public class ImageDataMessage
 {
     public string type;
-    public ObjectData data; 
+    public ObjectData data;
     public RotationData rotation;
     public string imageData;
-    
-    // New fields for camera intrinsics
+
     public float fx;
     public float fy;
     public float cx;
