@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: SimulationEnvironmentAssetsManager
   m_EditorClassIdentifier: 
   m_EnvironmentPrefabPaths:
+<<<<<<< HEAD
   - Assets/client/factory_environment.prefab
   - Assets/client/Simulation Environment2.prefab
   - Assets/Factory_180ftx101ft.prefab
@@ -36,5 +37,8 @@ MonoBehaviour:
   - Assets/UnityXRContent/ARFoundation/SimulationEnvironments/Office/Office_36ftx16.5ft_001.prefab
   - Assets/UnityXRContent/ARFoundation/SimulationEnvironments/Office/Office_36ftx16.5ft_002.prefab
   - Assets/UnityXRContent/ARFoundation/SimulationEnvironments/Park/Park_322ftx300ft.prefab
+=======
+  - Assets/client/Simulation Environment2.prefab
+>>>>>>> main
   - Packages/com.unity.xr.arfoundation/Assets/Prefabs/DefaultSimulationEnvironment.prefab
   m_FallbackAtEndOfList: 1

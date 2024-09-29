@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using TMPro;
+using TMPro;
 
 public class ClientLogic : MonoBehaviour
 {
@@ -12,8 +13,15 @@ public class ClientLogic : MonoBehaviour
     public RawImage colorImage;
     public RawImage depthImage;
     public Camera playerCamera; // Updated to include playerCamera
+    public Camera playerCamera; // Updated to include playerCamera
     public GameObject UICanvas;
     public GameObject anchorPrefab;
+
+    public GameObject NotiffBlock;
+    public TMP_Text dangerLevel;
+    public TMP_Text dangerSource;
+
+    public GameObject debugPrefab;
 
     public GameObject NotiffBlock;
     public TMP_Text dangerLevel;
@@ -31,7 +39,7 @@ public class ClientLogic : MonoBehaviour
 
     private Vector3[] UIScreenCorners = new Vector3[4];
 
-    private List<GameObject> anchors = new List<GameObject>();
+    public Dictionary<string, GameObject> anchors = new Dictionary<string, GameObject>();
 
     private GameObject debug;
 
@@ -39,6 +47,7 @@ public class ClientLogic : MonoBehaviour
     {
         StartWebSocket();
         SpawnUI();
+        debug = Instantiate(debugPrefab, Vector3.zero, Quaternion.identity);
         debug = Instantiate(debugPrefab, Vector3.zero, Quaternion.identity);
         connection.OnServerMessage += HandleServerMessage;
     }
@@ -76,8 +85,7 @@ public class ClientLogic : MonoBehaviour
             SendDataAsync();
         }
 
-        anchors.RemoveAll(anchor => anchor == null);
-
+        // anchors.RemoveAll(anchor => anchor == null);
     }
 
     private void HandeServerMessageDangerDetection(string message)
@@ -96,16 +104,18 @@ public class ClientLogic : MonoBehaviour
         }
         dangerLevel.text = dangerData.danger_level;
         dangerSource.text = dangerData.danger_source;
-    }
+}
 
-    private void HandleServerMessage(string message)
+private void HandleServerMessage(string message)
     {
+        //Debug.Log("Received from server: " + message);
         //Debug.Log("Received from server: " + message);
 
         FrameDataMessage frameData = JsonUtility.FromJson<FrameDataMessage>(message);
         if (frameData == null || frameData.type != "frame_data")
         {
             Debug.LogWarning("Invalid message received from server.");
+            HandeServerMessageDangerDetection(message);
             HandeServerMessageDangerDetection(message);
             return;
         }
@@ -137,84 +147,88 @@ public class ClientLogic : MonoBehaviour
             }
         }
 
-        // Handle object position
-        if (frameData.object_position != null)
+        // Handle object positions
+        if (frameData.objects != null && frameData.objects.Count > 0)
         {
-            Vector3 objectPosition = new Vector3(
-                frameData.object_position.x,
-                frameData.object_position.y,
-                frameData.object_position.z
-            );
-
-            debug.transform.position = objectPosition;
-            SpawnAnchor(objectPosition);
-        }
-        else
-        {
-            // No object detected in this frame; handle accordingly if needed
-        }
-    }
-
-    private void SpawnAnchor(Vector3 position)
-    {
-        if (anchorPrefab != null)
-        {
-            bool anchorNearby = false;
-
-            foreach (GameObject anchor in anchors)
+            foreach (ObjectData ObjectData in frameData.objects)
             {
-                if (anchor != null)
+                if (ObjectData != null)
                 {
-                    float distance = Vector3.Distance(position, anchor.transform.position);
-                    if (distance <= 0.1f)
+                    Vector3 objectPosition = new Vector3(
+                        ObjectData.x,
+                        ObjectData.y,
+                        ObjectData.z
+                    );
+
+                    string id = ObjectData.id;
+
+
+
+                    // Ignore positions at the origin
+                    if (objectPosition != Vector3.zero)
                     {
-                        anchorNearby = true;
-                        break;
+                        debug.transform.position = objectPosition;
+                        Debug.Log("ObjectPosition: " + objectPosition);
+                        SpawnAnchor(objectPosition,id);
                     }
                 }
             }
-
-            if (!anchorNearby)
-            {
-                GameObject newAnchor = Instantiate(anchorPrefab, position, Quaternion.identity);
-                newAnchor.layer = 30;
-
-                Anchor anchorScript = newAnchor.GetComponent<Anchor>();
-                if (anchorScript != null)
-                {
-                    anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
-                }
-                else
-                {
-                    Debug.LogWarning("Anchor component not found on the instantiated prefab.");
-                }
-
-                anchors.Add(newAnchor);
-            }
-            else
-            {
-                Debug.Log("An anchor already exists within 1.0 units. Not spawning a new one.");
-            }
         }
         else
         {
-            Debug.LogWarning("anchorPrefab is not assigned in the Inspector.");
+            Debug.LogWarning("No object positions received.");
         }
+    }
+    private void SpawnAnchor(Vector3 position,string id)
+    {
+        // Vector3 worldPosition = playerCamera.ScreenToWorldPoint(position);
+        Vector3 worldPosition = position;
+
+    
+
+        // check if anchor already exists --> set position
+        if (anchors.ContainsKey(id))
+        {
+            Debug.Log("Anchor already exists");
+            GameObject anchor = anchors[id];
+            anchor.transform.position = worldPosition;
+            return;
+        }
+
+        
+        GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
+        anchors.Add(id, newAnchor);
+        newAnchor.layer = 30;
+        Anchor anchorScript = newAnchor.GetComponent<Anchor>();
+        if (anchorScript != null)
+        {
+            anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
+        }
+        else
+        {
+            Debug.LogWarning("Anchor component not found on the instantiated prefab.");
+            }
+
     }
 
     private async void SendDataAsync()
     {
         if (colorImageBytes != null && colorImage.texture is Texture2D colorTex)
+        if (colorImageBytes != null && colorImage.texture is Texture2D colorTex)
         {
+            await SendImageDataAsync("color", colorImageBytes, colorTex.width, colorTex.height);
             await SendImageDataAsync("color", colorImageBytes, colorTex.width, colorTex.height);
         }
 
         if (depthImageBytes != null && depthImage.texture is Texture2D depthTex)
+        if (depthImageBytes != null && depthImage.texture is Texture2D depthTex)
         {
+            await SendImageDataAsync("depth", depthImageBytes, depthTex.width, depthTex.height);
             await SendImageDataAsync("depth", depthImageBytes, depthTex.width, depthTex.height);
         }
     }
 
+    private async Task SendImageDataAsync(string imageType, byte[] imageBytes, int imageWidth, int imageHeight)
     private async Task SendImageDataAsync(string imageType, byte[] imageBytes, int imageWidth, int imageHeight)
     {
         Vector3 pos = playerCamera.transform.position;
@@ -234,18 +248,19 @@ public class ClientLogic : MonoBehaviour
         // Principal points (assuming center of the image)
         float cx = imageWidth / 2f;
         float cy = imageHeight / 2f;
+;
+    
 
         ImageDataMessage dataObject = new ImageDataMessage
         {
             type = imageType,
-            position = new PositionData { x = pos.x, y = pos.y, z = pos.z },
+            data = new ObjectData { x = pos.x, y = pos.y, z = pos.z,id = "Null" },
             rotation = new RotationData { x = rot.x, y = rot.y, z = rot.z, w = rot.w },
             imageData = System.Convert.ToBase64String(imageBytes),
             fx = fx,
             fy = fy,
             cx = cx,
-            cy = cy,
-            UIScreenCorners = UIScreenCorners
+            cy = cy
         };
 
         string jsonString = JsonUtility.ToJson(dataObject);
@@ -254,6 +269,10 @@ public class ClientLogic : MonoBehaviour
 
     private void SpawnUI()
     {
+        Vector3 pos = new Vector3(-0.75999999f,0.569999993f,0.460000008f);
+        Vector3 rot = new Vector3(0.0f, 180.0f, 0.0f);
+        uiCanvasInstance = Instantiate(UICanvas, pos, Quaternion.Euler(rot));
+        // uiCanvasInstance.transform.LookAt(playerCamera.transform);
         Vector3 pos = new Vector3(-0.75999999f,0.569999993f,0.460000008f);
         Vector3 rot = new Vector3(0.0f, 180.0f, 0.0f);
         uiCanvasInstance = Instantiate(UICanvas, pos, Quaternion.Euler(rot));
@@ -306,16 +325,16 @@ public class FrameDataMessage
 {
     public string type;
     public GuiColorsData gui_colors;
-    public PositionData object_position;
+    public List<ObjectData> objects; // Updated to List
 }
 
 [System.Serializable]
 public class DangerDataMessage
-{
-    public string type;
-    public string danger_level;
-    public string danger_source;
-}
+ {
+     public string type;
+     public string danger_level;
+     public string danger_source;
+ }
 
 [System.Serializable]
 public class GuiColorsData
@@ -333,11 +352,12 @@ public class ColorData
 }
 
 [System.Serializable]
-public class PositionData
+public class ObjectData
 {
     public float x;
     public float y;
     public float z;
+    public string id;
 }
 
 [System.Serializable]
@@ -353,14 +373,13 @@ public class RotationData
 public class ImageDataMessage
 {
     public string type;
-    public PositionData position;
+    public ObjectData data; 
     public RotationData rotation;
     public string imageData;
-
+    
     // New fields for camera intrinsics
     public float fx;
     public float fy;
     public float cx;
     public float cy;
-    public Vector3[] UIScreenCorners;
 }
