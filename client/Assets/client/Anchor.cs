@@ -1,9 +1,12 @@
+using System.Collections;
 using UnityEngine;
 
 public class Anchor : MonoBehaviour
 {
     // Reference to the player's transform, set from ClientLogic
     public Transform playerTransform;
+
+    public ClientLogic client;
 
     // LayerMask to specify which layers the raycast should interact with (optional)
     public LayerMask raycastLayerMask = Physics.DefaultRaycastLayers;
@@ -12,16 +15,27 @@ public class Anchor : MonoBehaviour
     private float timeSinceLastRaycast = 0f;
     public float raycastInterval = 0.2f; // Raycast every 0.2 seconds
 
+    private LineRenderer lineRenderer;
+
+    public string id;
+
     void Start()
     {
-        // // Destroy this GameObject after 10 seconds
-        // Destroy(gameObject, 10f);
+        lineRenderer = GetComponent<LineRenderer>();
+        StartCoroutine(SelfDestroy());
 
         // Optional: Check if playerTransform is assigned
         if (playerTransform == null)
         {
             Debug.LogWarning("PlayerTransform is not assigned in Anchor. Please assign it from ClientLogic.");
         }
+    }
+
+    IEnumerator SelfDestroy()
+    {
+        yield return new WaitForSeconds(3);
+        client.DeleteAnchor(id);
+        Destroy(gameObject,0);
     }
 
     void Update()
@@ -58,8 +72,8 @@ public class Anchor : MonoBehaviour
                     Debug.Log("Anchor raycast did not hit anything.");
                 }
 
-                // Draw the ray for debugging purposes
-                Debug.DrawRay(transform.position, directionToPlayer * 100f, Color.red, raycastInterval);
+                lineRenderer.SetPosition(0, transform.position);
+                lineRenderer.SetPosition(1, playerTransform.position);
             }
         }
         else

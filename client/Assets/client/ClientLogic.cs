@@ -19,7 +19,7 @@ public class ClientLogic : MonoBehaviour
     public TMP_Text dangerLevel;
     public TMP_Text dangerSource;
 
-    public GameObject debugPrefab;
+    // public GameObject debugPrefab;
 
     private GameObject uiCanvasInstance;
 
@@ -37,7 +37,7 @@ public class ClientLogic : MonoBehaviour
     {
         StartWebSocket();
         SpawnUI();
-        debug = Instantiate(debugPrefab, Vector3.zero, Quaternion.identity);
+        // debug = Instantiate(debugPrefab, Vector3.zero, Quaternion.identity);
         connection.OnServerMessage += HandleServerMessage;
     }
 
@@ -137,23 +137,15 @@ private void HandleServerMessage(string message)
                     );
 
                     string id = ObjectData.id;
-
-
-
-                    // Ignore positions at the origin
-                    if (objectPosition != Vector3.zero)
-                    {
-                        debug.transform.position = objectPosition;
-                        Debug.Log("ObjectPosition: " + objectPosition);
-                        SpawnAnchor(objectPosition,id);
-                    }
+                SpawnAnchor(objectPosition,id);
+                }
+                else
+                {
+                    Debug.LogWarning("No object positions received.");
                 }
             }
         }
-        else
-        {
-            Debug.LogWarning("No object positions received.");
-        }
+        
     }
     private void SpawnAnchor(Vector3 position,string id)
     {
@@ -173,9 +165,13 @@ private void HandleServerMessage(string message)
 
         
         GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
+        Anchor anchorScript = newAnchor.GetComponent<Anchor>();
+        anchorScript.id = id;
+        anchorScript.client = this;
         anchors.Add(id, newAnchor);
         newAnchor.layer = 30;
-        Anchor anchorScript = newAnchor.GetComponent<Anchor>();
+        
+
         if (anchorScript != null)
         {
             anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
@@ -185,6 +181,11 @@ private void HandleServerMessage(string message)
             Debug.LogWarning("Anchor component not found on the instantiated prefab.");
             }
 
+    }
+
+    public void DeleteAnchor(string id)
+    {
+        anchors.Remove(id);
     }
 
     private async void SendDataAsync()
