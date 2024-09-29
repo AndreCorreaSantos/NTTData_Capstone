@@ -19,20 +19,45 @@ def process_image(current_frame, depth_image, detection, rotation, position, fx,
         box_values = [int(v) for v in box.values()]
         cv2.rectangle(current_frame, (box_values[0], box_values[1]), (box_values[2], box_values[3]), (0, 255, 0), 2)
 
-        x = (box_values[0] + box_values[2]) / 2
-        y = (box_values[1] + box_values[3]) / 2
+        # Compute the center of the bounding box
+        x = (box_values[0] + box_values[2]) / 2.0
+        y = (box_values[1] + box_values[3]) / 2.0
         cv2.circle(current_frame, (int(x), int(y)), 5, (0, 0, 255), -1)
-        
-        #average depth of the object
-        depth = np.mean(depth_image[box_values[1]:box_values[3], box_values[0]:box_values[2]])
 
         height,width,channels = current_frame.shape
+
+        x = width - x
+        y = height - y
+        
+        # Extract the depth at the bounding box center
+        depth = np.mean(depth_image[box_values[1]:box_values[3], box_values[0]:box_values[2]])
+        
+        # Convert pixel coordinates to normalized image coordinates
+        Zc = depth
+        Xc = (x - cx) * Zc / fx
+        Yc = (y - cy) * Zc / fy
+        P_camera = np.array([Xc, Yc, Zc])
+
+        # Get rotation matrix from quaternion
+        qx = rotation['x']
+        qy = rotation['y']
+        qz = rotation['z']
+        qw = rotation['w']
+        R = quaternion_to_rotation_matrix(qx, qy, qz, qw)
+
+        # Get camera position
+        T = np.array([position['x'], position['y'], position['z']])
+
+        # Transform point from camera coordinates to world coordinates
+        P_world = R @ P_camera + T  # If R represents camera-to-world rotation
+
         object_position = {
-            'x': int(width- x),
-            'y': int(height - y),
-            'z': float(depth)
+            'x': float(P_world[0]),
+            'y': float(P_world[1]),
+            'z': float(P_world[2])
         }
-        print("Object Position: ", object_position)
+
+        print(f"Object position: {object_position}")
         return object_position
 
     except Exception as e:

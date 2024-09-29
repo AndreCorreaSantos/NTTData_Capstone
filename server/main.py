@@ -92,8 +92,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
             image_type = data.get('type')
             image_data_base64 = data.get('imageData')
-            position = data.get('position')
-            # print("Position: ", position)   
+            position = data.get('data')
+            print("Position: ", position)   
             rotation = data.get('rotation')
             fx = data.get('fx')  # Camera intrinsic fx
             fy = data.get('fy')  # Camera intrinsic fy
