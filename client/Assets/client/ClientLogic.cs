@@ -174,7 +174,9 @@ private void HandleServerMessage(string message)
             // {
         Debug.Log("spawning anchor");
         Debug.Log("Position"+position);
-        GameObject newAnchor = Instantiate(anchorPrefab, position, Quaternion.identity);
+
+        Vector3 worldPosition = playerCamera.ViewportToWorldPoint(position);
+        GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
         newAnchor.layer = 30;
 
         Anchor anchorScript = newAnchor.GetComponent<Anchor>();

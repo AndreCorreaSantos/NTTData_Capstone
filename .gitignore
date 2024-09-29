@@ -47,3 +47,7 @@ sysinfo.txt
 .DS_Store
 
 env/
+
+
+# ML models
+*.pt

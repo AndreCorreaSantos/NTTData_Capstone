@@ -22,43 +22,14 @@ def process_image(current_frame, depth_image, detection, rotation, position, fx,
         x = (box_values[0] + box_values[2]) / 2
         y = (box_values[1] + box_values[3]) / 2
         cv2.circle(current_frame, (int(x), int(y)), 5, (0, 0, 255), -1)
-        print(f"Detected object at ({x}, {y})")
-
-        # Use a fixed depth value for testing
-        depth = 5.0
-
-        # Invert the y-coordinate to align coordinate systems
-        y_normalized = -(y - cy) / fy
-        x_normalized = (x - cx) / fx
-        obj_camspace = np.array([x_normalized * depth, y_normalized * depth, depth])
-
-        # Extract and normalize quaternion components
-        qw = rotation.get('w', 1)
-        qx = rotation.get('x', 0)
-        qy = rotation.get('y', 0)
-        qz = rotation.get('z', 0)
-
-        norm = np.sqrt(qw**2 + qx**2 + qy**2 + qz**2)
-        qw /= norm
-        qx /= norm
-        qy /= norm
-        qz /= norm
-
-        # Compute and transpose the rotation matrix
-        rotation_matrix = quaternion_to_rotation_matrix(qw, qx, qy, qz).T
-
-        # Camera position
-        px = position.get('x', 0)
-        py = position.get('y', 0)
-        pz = position.get('z', 0)
-
-        # Transform to world coordinates
-        world_coords = rotation_matrix @ obj_camspace + np.array([px, py, pz])
+        
+        #average depth of the object
+        depth = np.mean(depth_image[box_values[1]:box_values[3], box_values[0]:box_values[2]])
 
         object_position = {
-            'x': float(world_coords[0]),
-            'y': float(world_coords[1]),
-            'z': float(world_coords[2])
+            'x': int(x),
+            'y': int(y),
+            'z': float(depth)
         }
         print("Object Position: ", object_position)
         return object_position
