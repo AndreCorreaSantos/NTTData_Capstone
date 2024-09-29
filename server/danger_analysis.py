@@ -105,24 +105,26 @@ async def run_analyzer(websocket: WebSocket | None):
     print(completion.choices[0].message)
 
 
-def get_all_images_from_dir(path_to_dir):
-    regex = re.compile('.*\.(jpe?g|png)$')
-    f_matches = []
 
-    for root, dirs, files in os.walk(path_to_dir):
-        for file in files:
-            if regex.match(file):
-                f_matches.append(file)
-    return f_matches
+async def get_all_images_from_dir(path_to_dir):
+    async with locks.file_lock:
+        regex = re.compile('.*\.(jpe?g|png)$')
+        f_matches = []
+
+        for root, dirs, files in os.walk(path_to_dir):
+            for file in files:
+                if regex.match(file):
+                    f_matches.append(file)
+        return f_matches
 
 
-def analyze_all_images_in_dir(path_to_dir, client):
-    images = get_all_images_from_dir(path_to_dir)
+async def analyze_all_images_in_dir(path_to_dir, client, websocket: WebSocket | None):
+    images = await get_all_images_from_dir(path_to_dir)
     for image in images:
-        analyze_image(path_to_dir + image, client)
+        await analyze_image(path_to_dir + image, client, websocket)
 
 
-async def run_analyzer():
+async def run_analyzer(websocket: WebSocket | None):
 
     azure_client = AzureOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),

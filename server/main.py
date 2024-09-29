@@ -1,5 +1,7 @@
 # server_main.py
 
+# server_main.py
+
 from fastapi import FastAPI, WebSocket
 import uvicorn
 from PIL import Image
@@ -12,7 +14,11 @@ import base64
 import aiofiles
 import os
 import locks
+import aiofiles
+import os
+import locks
 
+import asyncio
 import asyncio
 from image_processing import process_image, calculate_background_colors
 
@@ -79,16 +85,21 @@ async def websocket_danger_detection(websocket: WebSocket):
 
 @app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket):
+    global latest_depth_frame
     print("WebSocket connection starting...")
     await websocket.accept()
 
     try:
         # loop = asyncio.get_running_loop()
         # asyncio.create_task(danger_analysis.run_analyzer(websocket))
+        # loop = asyncio.get_running_loop()
+        # asyncio.create_task(danger_analysis.run_analyzer(websocket))
         while True:
+
 
             json_message = await websocket.receive_text()
             data = json.loads(json_message)
+            #print("Received message:", data)
 
             image_type = data.get('type')
             image_data_base64 = data.get('imageData')
@@ -117,6 +128,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 continue
 
             if image_type == "color":
+                # Convert RGB to BGR for OpenCV
                 # Convert RGB to BGR for OpenCV
                 current_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
@@ -170,6 +182,12 @@ async def websocket_endpoint(websocket: WebSocket):
                             
 
                 # Prepare the combined JSON message
+                '''DELETAR: PORQUE NÃO COLOCAR A INFORMAÇÃO DO GPT AQUI:
+                ELE É ASINCRONO EM RELAÇÃO AO RESTO DO PROGRAMA.
+                esperar ele pra mandar nesse mesmo request daria um problema, 
+                já que teria que esperar a resposta da openai pra mandar o resto.
+                vou tentar criar um endpoint novo só pra stream de dados do caso 3, já 
+                que não faz sentido tratar dele aqui'''
                 '''DELETAR: PORQUE NÃO COLOCAR A INFORMAÇÃO DO GPT AQUI:
                 ELE É ASINCRONO EM RELAÇÃO AO RESTO DO PROGRAMA.
                 esperar ele pra mandar nesse mesmo request daria um problema, 

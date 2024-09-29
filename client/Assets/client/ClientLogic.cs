@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using TMPro;
+using TMPro;
 
 public class ClientLogic : MonoBehaviour
 {
@@ -12,8 +13,15 @@ public class ClientLogic : MonoBehaviour
     public RawImage colorImage;
     public RawImage depthImage;
     public Camera playerCamera; // Updated to include playerCamera
+    public Camera playerCamera; // Updated to include playerCamera
     public GameObject UICanvas;
     public GameObject anchorPrefab;
+
+    public GameObject NotiffBlock;
+    public TMP_Text dangerLevel;
+    public TMP_Text dangerSource;
+
+    public GameObject debugPrefab;
 
     public GameObject NotiffBlock;
     public TMP_Text dangerLevel;
@@ -29,6 +37,8 @@ public class ClientLogic : MonoBehaviour
     private float timeSinceLastSend = 0f;
     private float sendInterval = 0.5f;
 
+    private Vector3[] UIScreenCorners = new Vector3[4];
+
     public Dictionary<string, GameObject> anchors = new Dictionary<string, GameObject>();
 
     private GameObject debug;
@@ -37,6 +47,7 @@ public class ClientLogic : MonoBehaviour
     {
         StartWebSocket();
         SpawnUI();
+        debug = Instantiate(debugPrefab, Vector3.zero, Quaternion.identity);
         debug = Instantiate(debugPrefab, Vector3.zero, Quaternion.identity);
         connection.OnServerMessage += HandleServerMessage;
     }
@@ -48,6 +59,15 @@ public class ClientLogic : MonoBehaviour
         if (timeSinceLastSend >= sendInterval && colorImage != null && depthImage != null && isWebSocketConnected)
         {
             timeSinceLastSend = 0f;
+
+            Vector3[] UIWorldCorners = new Vector3[4];
+            uiCanvasInstance.transform.GetChild(1).gameObject.GetComponent<RectTransform>().GetWorldCorners(UIWorldCorners);
+            for (int i = 0; i < UIWorldCorners.Length; i++)
+            {
+                Vector3 UIscreenCorner = playerCamera.WorldToScreenPoint(UIWorldCorners[i]);
+                UIScreenCorners[i] = UIscreenCorner;
+                Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
+            }
 
             Texture2D colorTexture = ConvertToTexture2D(colorImage.texture);
             Texture2D depthTexture = ConvertToTexture2D(depthImage.texture);
@@ -89,11 +109,13 @@ public class ClientLogic : MonoBehaviour
 private void HandleServerMessage(string message)
     {
         //Debug.Log("Received from server: " + message);
+        //Debug.Log("Received from server: " + message);
 
         FrameDataMessage frameData = JsonUtility.FromJson<FrameDataMessage>(message);
         if (frameData == null || frameData.type != "frame_data")
         {
             Debug.LogWarning("Invalid message received from server.");
+            HandeServerMessageDangerDetection(message);
             HandeServerMessageDangerDetection(message);
             return;
         }
@@ -111,6 +133,8 @@ private void HandleServerMessage(string message)
                 frameData.gui_colors.text_color.g / 255f,
                 frameData.gui_colors.text_color.b / 255f
             );
+
+            Color black = new Color(0, 0, 0);
 
             setColors colorSetter = uiCanvasInstance.GetComponent<setColors>();
             if (colorSetter != null)
@@ -190,16 +214,21 @@ private void HandleServerMessage(string message)
     private async void SendDataAsync()
     {
         if (colorImageBytes != null && colorImage.texture is Texture2D colorTex)
+        if (colorImageBytes != null && colorImage.texture is Texture2D colorTex)
         {
+            await SendImageDataAsync("color", colorImageBytes, colorTex.width, colorTex.height);
             await SendImageDataAsync("color", colorImageBytes, colorTex.width, colorTex.height);
         }
 
         if (depthImageBytes != null && depthImage.texture is Texture2D depthTex)
+        if (depthImageBytes != null && depthImage.texture is Texture2D depthTex)
         {
+            await SendImageDataAsync("depth", depthImageBytes, depthTex.width, depthTex.height);
             await SendImageDataAsync("depth", depthImageBytes, depthTex.width, depthTex.height);
         }
     }
 
+    private async Task SendImageDataAsync(string imageType, byte[] imageBytes, int imageWidth, int imageHeight)
     private async Task SendImageDataAsync(string imageType, byte[] imageBytes, int imageWidth, int imageHeight)
     {
         Vector3 pos = playerCamera.transform.position;
@@ -240,6 +269,10 @@ private void HandleServerMessage(string message)
 
     private void SpawnUI()
     {
+        Vector3 pos = new Vector3(-0.75999999f,0.569999993f,0.460000008f);
+        Vector3 rot = new Vector3(0.0f, 180.0f, 0.0f);
+        uiCanvasInstance = Instantiate(UICanvas, pos, Quaternion.Euler(rot));
+        // uiCanvasInstance.transform.LookAt(playerCamera.transform);
         Vector3 pos = new Vector3(-0.75999999f,0.569999993f,0.460000008f);
         Vector3 rot = new Vector3(0.0f, 180.0f, 0.0f);
         uiCanvasInstance = Instantiate(UICanvas, pos, Quaternion.Euler(rot));
