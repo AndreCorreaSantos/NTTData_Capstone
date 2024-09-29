@@ -51,3 +51,4 @@ env/
 
 # ML models
 *.pt
+*.pth

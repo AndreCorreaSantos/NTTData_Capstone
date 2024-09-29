@@ -26,9 +26,10 @@ def process_image(current_frame, depth_image, detection, rotation, position, fx,
         #average depth of the object
         depth = np.mean(depth_image[box_values[1]:box_values[3], box_values[0]:box_values[2]])
 
+        height,width,channels = current_frame.shape
         object_position = {
             'x': int(x),
-            'y': int(y),
+            'y': int(height - y),
             'z': float(depth)
         }
         print("Object Position: ", object_position)

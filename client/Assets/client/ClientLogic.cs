@@ -136,6 +136,8 @@ private void HandleServerMessage(string message)
                         positionData.z
                     );
 
+
+
                     // Ignore positions at the origin
                     if (objectPosition != Vector3.zero)
                     {
@@ -172,22 +174,22 @@ private void HandleServerMessage(string message)
 
             // if (!anchorNearby)
             // {
-        Debug.Log("spawning anchor");
-        Debug.Log("Position"+position);
 
-        Vector3 worldPosition = playerCamera.ViewportToWorldPoint(position);
-        GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
-        newAnchor.layer = 30;
 
-        Anchor anchorScript = newAnchor.GetComponent<Anchor>();
-        if (anchorScript != null)
-        {
-            anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
-        }
-        else
-        {
-            Debug.LogWarning("Anchor component not found on the instantiated prefab.");
-        }
+                Vector3 worldPosition = playerCamera.ScreenToWorldPoint(position);
+                GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
+                newAnchor.layer = 30;
+                Debug.Log("spawning anchor");
+                Debug.Log("Position"+worldPosition);
+                Anchor anchorScript = newAnchor.GetComponent<Anchor>();
+                if (anchorScript != null)
+                {
+                    anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
+                }
+                else
+                {
+                    Debug.LogWarning("Anchor component not found on the instantiated prefab.");
+                }
 
         // anchors.Add(newAnchor);
         //     }

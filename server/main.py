@@ -19,7 +19,26 @@ from image_processing import process_image, calculate_background_colors
 from transformers import pipeline
 from PIL import Image
 
-depth_pipe = pipeline(task="depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf", device=0)
+from metric_depth.depth_anything_v2.dpt import DepthAnythingV2
+import torch
+
+def load_depth_model():
+    model_configs = {
+        'vits': {'encoder': 'vits', 'features': 64, 'out_channels': [48, 96, 192, 384]},
+        'vitb': {'encoder': 'vitb', 'features': 128, 'out_channels': [96, 192, 384, 768]},
+        'vitl': {'encoder': 'vitl', 'features': 256, 'out_channels': [256, 512, 1024, 1024]}
+    }
+
+    encoder = 'vitb' # or 'vits', 'vitb'
+    dataset = 'hypersim' # 'hypersim' for indoor model, 'vkitti' for outdoor model
+    max_depth = 20 # 20 for indoor model, 80 for outdoor model
+
+    model = DepthAnythingV2(**{**model_configs[encoder], 'max_depth': max_depth}).cuda()
+    model.load_state_dict(torch.load(f'depth_anything_v2_metric_{dataset}_{encoder}.pth', map_location='cpu'))
+    model.eval()
+    return model
+
+
 
 
 # import danger_analysis
@@ -27,6 +46,8 @@ from datetime import datetime
 
 app = FastAPI()
 model = YOLO("yolov8n.pt")
+
+depth_model = load_depth_model()
 
 now = datetime.now()
 
@@ -109,12 +130,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 results = model(current_frame, verbose=False)
 
                 # Depth estimation using Depth anything
-                depth_frame = np.array(depth_pipe(image)["depth"])
-                
-                # open another window to display the depth frame
+                depth_frame = depth_model.infer_image(image_np)
 
-
-                # Iterate through all detections
                 
                 for detection in results:
                     if detection is not None:
@@ -184,8 +201,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 # depth_frame_normalized = cv2.normalize(depth_frame, None, 0, 255, cv2.NORM_MINMAX)
                 # depth_frame_normalized = np.uint8(depth_frame_normalized)
 
-                # Display the depth image in another window
-                cv2.imshow("Depth Image", depth_frame)
+                # Normalize depth frame for visualization
+                depth_frame_normalized = cv2.normalize(depth_frame, None, 0, 255, cv2.NORM_MINMAX)
+                depth_frame_normalized = np.uint8(depth_frame_normalized)
+
+                # Display the normalized depth image
+                cv2.imshow("Depth Image", depth_frame_normalized)
                 cv2.waitKey(1)
 
     except Exception as e:
