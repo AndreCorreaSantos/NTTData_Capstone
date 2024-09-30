@@ -114,10 +114,10 @@ def calculate_background_colors(image, UIScreenCorners):
     image = cv2.flip(image, -1)
     # Round and extract the coordinates of the screen corners
     UIScreenCorners = [
-        (np.round(UIScreenCorners[0]['x']), np.round(UIScreenCorners[0]['y'])),
-        (np.round(UIScreenCorners[1]['x']), np.round(UIScreenCorners[1]['y'])),
-        (np.round(UIScreenCorners[2]['x']), np.round(UIScreenCorners[2]['y'])),
-        (np.round(UIScreenCorners[3]['x']), np.round(UIScreenCorners[3]['y']))
+        [(UIScreenCorners[0]['x']), (UIScreenCorners[0]['y'])],
+        [(UIScreenCorners[1]['x']), (UIScreenCorners[1]['y'])],
+        [(UIScreenCorners[2]['x']), (UIScreenCorners[2]['y'])],
+        [(UIScreenCorners[3]['x']), (UIScreenCorners[3]['y'])]
     ]
 
     print(f"UIScreenCorners: {UIScreenCorners}")
@@ -125,10 +125,20 @@ def calculate_background_colors(image, UIScreenCorners):
     height, width = image.shape[:2]
     
     # Calculate the minimum and maximum x and y coordinates to define the region of interest (ROI)
-    min_x = int(min(UIScreenCorners[0][0], UIScreenCorners[1][0], UIScreenCorners[2][0], UIScreenCorners[3][0]))
-    max_x = int(max(UIScreenCorners[0][0], UIScreenCorners[1][0], UIScreenCorners[2][0], UIScreenCorners[3][0]))
-    min_y = int(min(UIScreenCorners[0][1], UIScreenCorners[1][1], UIScreenCorners[2][1], UIScreenCorners[3][1]))
-    max_y = int(max(UIScreenCorners[0][1], UIScreenCorners[1][1], UIScreenCorners[2][1], UIScreenCorners[3][1]))
+    min_x = min(UIScreenCorners[0][0], UIScreenCorners[1][0], UIScreenCorners[2][0], UIScreenCorners[3][0])
+    max_x = max(UIScreenCorners[0][0], UIScreenCorners[1][0], UIScreenCorners[2][0], UIScreenCorners[3][0])
+    min_y = min(UIScreenCorners[0][1], UIScreenCorners[1][1], UIScreenCorners[2][1], UIScreenCorners[3][1])
+    max_y = max(UIScreenCorners[0][1], UIScreenCorners[1][1], UIScreenCorners[2][1], UIScreenCorners[3][1])
+
+    print(f"min_x: {min_x*width}, max_x: {max_x*width}, min_y: {min_y*height}, max_y: {max_y*height}")
+    print(f"width: {width}, height: {height}")
+
+    min_x  = int(np.round(min_x*width))
+    max_x  = int(np.round(max_x*width))
+    min_y  = int(np.round(min_y*height))
+    max_y  = int(np.round(max_y*height))
+
+    print(f"min_x: {min_x}, max_x: {max_x}, min_y: {min_y}, max_y: {max_y}")
     
     # Define the interior region of interest (ROI) based on the calculated corners
     interior_min_x = max(0, min_x)
