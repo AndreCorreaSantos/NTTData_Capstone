@@ -65,24 +65,24 @@ public class Anchor : MonoBehaviour
                     // The raycast hit something
                     if (hitInfo.transform == playerTransform)
                     {
-                        Debug.Log("Anchor raycast hit the player!");
+                        if (DebugMode) Debug.Log("Anchor raycast hit the player!");
                         HandleUIHit(false);
                     }
                     else if (hitInfo.transform.gameObject.layer == LayerMask.NameToLayer("UI"))
                     {
-                        Debug.Log("Anchor raycast hit the UI!");
+                        if (DebugMode) Debug.Log("Anchor raycast hit the UI!");
                         HandleUIHit(true);
                     }
                     else
                     {
-                        Debug.Log("Anchor raycast hit: " + hitInfo.transform.name);
+                        if (DebugMode) Debug.Log("Anchor raycast hit: " + hitInfo.transform.name);
                         HandleUIHit(false);
                     }
                 }
                 else
                 {
                     // The raycast did not hit anything
-                    Debug.Log("Anchor raycast did not hit anything.");
+                    if (DebugMode) Debug.Log("Anchor raycast did not hit anything.");
                     HandleUIHit(false);
                 }
 
@@ -138,11 +138,32 @@ public class Anchor : MonoBehaviour
     IEnumerator SelfDestroy()
     {
         yield return new WaitForSeconds(3);
+
+        // Check if the UI was being obstructed by this anchor
+        if (isUICurrentlyHit)
+        {
+            // Inform the client to decrement uiObstructedCount
+            HandleUIHit(false);
+        }
+
         client.DeleteAnchor(id);
+
         if (lineInstance != null)
         {
             Destroy(lineInstance);
         }
+
         Destroy(gameObject);
+    }
+
+    private void OnDestroy()
+    {
+        if (isUICurrentlyHit)
+        {
+            if (client != null)
+            {
+                client.ReturnUIToOriginalPosition();
+            }
+        }
     }
 }

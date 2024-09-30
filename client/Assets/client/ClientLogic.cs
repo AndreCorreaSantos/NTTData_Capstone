@@ -36,12 +36,11 @@ public class ClientLogic : MonoBehaviour
     public float uiFollowSpeed = 5f; // Adjust this value to control follow speed
 
     // Variables for moving the UI out of the way
-    private bool isUIMoving = false;
-    private Vector3 originalUIPosition;
-    private Vector3 targetUIPosition;
-    private int uiObstructedCount = 0;
+    private float uiVerticalOffset = 0f;
+    private float uiVerticalOffsetVelocity = 0f;
     public float uiMoveAmount = 1.0f; // Distance to move the UI when obstructed
-    public float uiMoveSpeed = 5f; // Speed at which the UI moves out of the way
+    public float uiMoveDuration = 0.5f; // Time to move the UI when obstructed
+    private int uiObstructedCount = 0;
 
     void Start()
     {
@@ -85,25 +84,8 @@ public class ClientLogic : MonoBehaviour
             SendDataAsync();
         }
 
-        // Update the UI position every frame to keep it in front of the player
         UpdateUIPosition();
-
-        // Smoothly move the UI if needed
-        if (uiCanvasInstance != null && isUIMoving)
-        {
-            uiCanvasInstance.transform.position = Vector3.Lerp(
-                uiCanvasInstance.transform.position,
-                targetUIPosition,
-                Time.deltaTime * uiMoveSpeed
-            );
-
-            // Check if the UI has reached the target position
-            if (Vector3.Distance(uiCanvasInstance.transform.position, targetUIPosition) < 0.01f)
-            {
-                uiCanvasInstance.transform.position = targetUIPosition;
-                isUIMoving = false;
-            }
-        }
+        UpdateUIRotation();
     }
 
     private void UpdateUIPosition()
@@ -115,19 +97,29 @@ public class ClientLogic : MonoBehaviour
             Vector3 forwardDirection = playerCamera.transform.forward;
             Vector3 desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
 
-            // If the UI is moving out of the way, maintain the vertical offset
-            if (isUIMoving || uiObstructedCount > 0)
-            {
-                desiredPosition.y = uiCanvasInstance.transform.position.y;
-            }
+            // Adjust vertical position using SmoothDamp
+            float targetVerticalOffset = uiObstructedCount > 0 ? uiMoveAmount : 0f;
+            float smoothTime = uiMoveDuration;
+
+            uiVerticalOffset = Mathf.SmoothDamp(uiVerticalOffset, targetVerticalOffset, ref uiVerticalOffsetVelocity, smoothTime);
+
+            // Apply vertical offset
+            desiredPosition.y += uiVerticalOffset;
 
             // Smoothly move the UI towards the desired position
+            float positionLerpSpeed = uiFollowSpeed * Time.deltaTime;
             uiCanvasInstance.transform.position = Vector3.Lerp(
                 uiCanvasInstance.transform.position,
                 desiredPosition,
-                Time.deltaTime * uiFollowSpeed
+                positionLerpSpeed
             );
+        }
+    }
 
+    private void UpdateUIRotation()
+    {
+        if (uiCanvasInstance != null && playerCamera != null)
+        {
             // Compute the direction to the player, ignoring Y-axis differences
             Vector3 directionToPlayer = playerCamera.transform.position - uiCanvasInstance.transform.position;
             directionToPlayer.y = 0f; // Ignore vertical component to rotate only around Y-axis
@@ -254,7 +246,6 @@ public class ClientLogic : MonoBehaviour
         // Ensure the final colors are set
         colorSetter.SetColor(targetBackgroundColor, targetTextColor);
     }
-
 
     private void SpawnAnchor(Vector3 position, string id)
     {
@@ -415,36 +406,12 @@ public class ClientLogic : MonoBehaviour
 
     public void MoveUIOutOfWay()
     {
-        if (uiCanvasInstance != null)
-        {
-            uiObstructedCount++;
-
-            if (uiObstructedCount == 1)
-            {
-                // Save the original position
-                originalUIPosition = uiCanvasInstance.transform.position;
-
-                // Calculate the new position to move the UI upward
-                targetUIPosition = originalUIPosition + new Vector3(0, uiMoveAmount, 0);
-
-                isUIMoving = true;
-            }
-        }
+        uiObstructedCount++;
     }
 
     public void ReturnUIToOriginalPosition()
     {
-        if (uiCanvasInstance != null)
-        {
-            uiObstructedCount = Mathf.Max(0, uiObstructedCount - 1);
-
-            if (uiObstructedCount == 0)
-            {
-                // Return UI to original position
-                targetUIPosition = originalUIPosition;
-                isUIMoving = true;
-            }
-        }
+        uiObstructedCount = Mathf.Max(0, uiObstructedCount - 1);
     }
 
     // Serializable classes for JSON deserialization
