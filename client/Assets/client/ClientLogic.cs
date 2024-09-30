@@ -27,6 +27,8 @@ public class ClientLogic : MonoBehaviour
     private float timeSinceLastSend = 0f;
     private float sendInterval = 0.5f;
 
+    private Vector3[] UIScreenCorners = new Vector3[4];
+
     public Dictionary<string, GameObject> anchors = new Dictionary<string, GameObject>();
 
     // Variables for smooth UI movement
@@ -54,6 +56,15 @@ public class ClientLogic : MonoBehaviour
         if (timeSinceLastSend >= sendInterval && colorImage != null && depthImage != null && isWebSocketConnected)
         {
             timeSinceLastSend = 0f;
+
+            Vector3[] UIWorldCorners = new Vector3[4];
+            uiCanvasInstance.transform.GetChild(1).GetChild(0).gameObject.GetComponent<RectTransform>().GetWorldCorners(UIWorldCorners);
+            for (int i = 0; i < UIWorldCorners.Length; i++)
+            {
+                Vector3 UIscreenCorner = playerCamera.WorldToScreenPoint(UIWorldCorners[i]);
+                UIScreenCorners[i] = UIscreenCorner;
+                //Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
+            }
 
             Texture2D colorTexture = ConvertToTexture2D(colorImage.texture);
             Texture2D depthTexture = ConvertToTexture2D(depthImage.texture);
@@ -306,7 +317,8 @@ public class ClientLogic : MonoBehaviour
             fx = fx,
             fy = fy,
             cx = cx,
-            cy = cy
+            cy = cy,
+            UIScreenCorners = UIScreenCorners
         };
 
         string jsonString = JsonUtility.ToJson(dataObject);
@@ -470,5 +482,6 @@ public class ClientLogic : MonoBehaviour
         public float fy;
         public float cx;
         public float cy;
+        public Vector3[] UIScreenCorners;
     }
 }
