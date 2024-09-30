@@ -7,7 +7,7 @@ using System.Collections.Generic;
 public class setColors : MonoBehaviour
 {
     public Image Background;
-    private List<TextMeshProUGUI> textObjects = new List<TextMeshProUGUI>();
+    public List<TextMeshProUGUI> textObjects = new List<TextMeshProUGUI>();
 
     void Start()
     {
