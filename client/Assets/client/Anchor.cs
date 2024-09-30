@@ -5,11 +5,10 @@ public class Anchor : MonoBehaviour
 {
     // Reference to the player's transform, set from ClientLogic
     public Transform playerTransform;
-
     public ClientLogic client;
 
-    // LayerMask to specify which layers the raycast should interact with (optional)
-    public LayerMask raycastLayerMask = Physics.DefaultRaycastLayers;
+    // LayerMask to specify which layers the raycast should interact with
+    public LayerMask raycastLayerMask;
 
     // Variables to control raycasting frequency
     private float timeSinceLastRaycast = 0f;
@@ -21,28 +20,28 @@ public class Anchor : MonoBehaviour
     public string id;
 
     private bool DebugMode = true;
+    private bool isUICurrentlyHit = false;
 
     void Start()
     {
         StartCoroutine(SelfDestroy());
 
-        // Optional: Check if playerTransform is assigned
         if (playerTransform == null)
         {
             Debug.LogWarning("PlayerTransform is not assigned in Anchor. Please assign it from ClientLogic.");
         }
-        if(DebugMode)
+        if (DebugMode)
         {
             lineInstance = Instantiate(linePrefab, transform.position, Quaternion.identity);
         }
-    }
 
-    IEnumerator SelfDestroy()
-    {
-        yield return new WaitForSeconds(3);
-        client.DeleteAnchor(id);
-        Destroy(lineInstance);
-        Destroy(gameObject);
+        // Ensure the raycastLayerMask includes the UI layer
+        // If not set in the inspector, you can set it here
+        if (raycastLayerMask == 0)
+        {
+            // Include all layers
+            raycastLayerMask = Physics.DefaultRaycastLayers;
+        }
     }
 
     void Update()
@@ -67,19 +66,27 @@ public class Anchor : MonoBehaviour
                     if (hitInfo.transform == playerTransform)
                     {
                         Debug.Log("Anchor raycast hit the player!");
+                        HandleUIHit(false);
+                    }
+                    else if (hitInfo.transform.gameObject.layer == LayerMask.NameToLayer("UI"))
+                    {
+                        Debug.Log("Anchor raycast hit the UI!");
+                        HandleUIHit(true);
                     }
                     else
                     {
                         Debug.Log("Anchor raycast hit: " + hitInfo.transform.name);
+                        HandleUIHit(false);
                     }
                 }
                 else
                 {
                     // The raycast did not hit anything
                     Debug.Log("Anchor raycast did not hit anything.");
+                    HandleUIHit(false);
                 }
 
-                if(DebugMode)
+                if (DebugMode)
                 {
                     UpdateLine();
                 }
@@ -91,8 +98,30 @@ public class Anchor : MonoBehaviour
         }
     }
 
+    private void HandleUIHit(bool isHit)
+    {
+        if (isHit && !isUICurrentlyHit)
+        {
+            isUICurrentlyHit = true;
+            if (client != null)
+            {
+                client.MoveUIOutOfWay();
+            }
+        }
+        else if (!isHit && isUICurrentlyHit)
+        {
+            isUICurrentlyHit = false;
+            if (client != null)
+            {
+                client.ReturnUIToOriginalPosition();
+            }
+        }
+    }
+
     private void UpdateLine()
     {
+        if (lineInstance == null) return;
+
         Vector3 directionToPlayer = (playerTransform.position - transform.position);
         float distance = directionToPlayer.magnitude;
 
@@ -106,8 +135,14 @@ public class Anchor : MonoBehaviour
         lineInstance.transform.rotation = Quaternion.FromToRotation(Vector3.up, directionToPlayer);
     }
 
-
+    IEnumerator SelfDestroy()
+    {
+        yield return new WaitForSeconds(3);
+        client.DeleteAnchor(id);
+        if (lineInstance != null)
+        {
+            Destroy(lineInstance);
+        }
+        Destroy(gameObject);
+    }
 }
-
-
-

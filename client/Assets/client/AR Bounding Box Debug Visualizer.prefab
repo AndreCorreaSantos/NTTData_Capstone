@@ -339,7 +339,7 @@ MonoBehaviour:
   client: {fileID: 0}
   raycastLayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 1073742643
   raycastInterval: 0.2
   linePrefab: {fileID: 4601044943315064401, guid: 5426053a8b2795d4ca9f827e784224db,
     type: 3}

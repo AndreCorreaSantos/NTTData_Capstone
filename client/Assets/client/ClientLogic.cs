@@ -29,8 +29,16 @@ public class ClientLogic : MonoBehaviour
 
     public Dictionary<string, GameObject> anchors = new Dictionary<string, GameObject>();
 
-    // New variables for smooth UI movement
+    // Variables for smooth UI movement
     public float uiFollowSpeed = 5f; // Adjust this value to control follow speed
+
+    // Variables for moving the UI out of the way
+    private bool isUIMoving = false;
+    private Vector3 originalUIPosition;
+    private Vector3 targetUIPosition;
+    private int uiObstructedCount = 0;
+    public float uiMoveAmount = 1.0f; // Distance to move the UI when obstructed
+    public float uiMoveSpeed = 5f; // Speed at which the UI moves out of the way
 
     void Start()
     {
@@ -65,6 +73,23 @@ public class ClientLogic : MonoBehaviour
 
         // Update the UI position every frame to keep it in front of the player
         UpdateUIPosition();
+
+        // Smoothly move the UI if needed
+        if (uiCanvasInstance != null && isUIMoving)
+        {
+            uiCanvasInstance.transform.position = Vector3.Lerp(
+                uiCanvasInstance.transform.position,
+                targetUIPosition,
+                Time.deltaTime * uiMoveSpeed
+            );
+
+            // Check if the UI has reached the target position
+            if (Vector3.Distance(uiCanvasInstance.transform.position, targetUIPosition) < 0.01f)
+            {
+                uiCanvasInstance.transform.position = targetUIPosition;
+                isUIMoving = false;
+            }
+        }
     }
 
     private void UpdateUIPosition()
@@ -75,6 +100,12 @@ public class ClientLogic : MonoBehaviour
             float distanceFromPlayer = 2.0f; // Adjust this value as needed
             Vector3 forwardDirection = playerCamera.transform.forward;
             Vector3 desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
+
+            // If the UI is moving out of the way, maintain the vertical offset
+            if (isUIMoving || uiObstructedCount > 0)
+            {
+                desiredPosition.y = uiCanvasInstance.transform.position.y;
+            }
 
             // Smoothly move the UI towards the desired position
             uiCanvasInstance.transform.position = Vector3.Lerp(
@@ -210,8 +241,9 @@ public class ClientLogic : MonoBehaviour
         Anchor anchorScript = newAnchor.GetComponent<Anchor>();
         anchorScript.id = id;
         anchorScript.client = this;
+        anchorScript.playerTransform = playerCamera.transform; // Set playerTransform
         anchors.Add(id, newAnchor);
-        newAnchor.layer = 30;
+        newAnchor.layer = LayerMask.NameToLayer("Default"); // Adjust layer as needed
 
         if (anchorScript != null)
         {
@@ -225,7 +257,11 @@ public class ClientLogic : MonoBehaviour
 
     public void DeleteAnchor(string id)
     {
-        anchors.Remove(id);
+        if (anchors.ContainsKey(id))
+        {
+            Destroy(anchors[id]);
+            anchors.Remove(id);
+        }
     }
 
     private async void SendDataAsync()
@@ -291,7 +327,7 @@ public class ClientLogic : MonoBehaviour
             // Make the UI face the player
             uiCanvasInstance.transform.rotation = Quaternion.LookRotation(uiCanvasInstance.transform.position - playerCamera.transform.position);
 
-            SetLayerRecursively(uiCanvasInstance, 30);
+            SetLayerRecursively(uiCanvasInstance, LayerMask.NameToLayer("UI"));
         }
         else
         {
@@ -334,69 +370,105 @@ public class ClientLogic : MonoBehaviour
         }
         return null;
     }
-}
 
-// Serializable classes for JSON deserialization
+    // Methods to move the UI out of the way when obstructed by anchor raycasts
 
-[System.Serializable]
-public class FrameDataMessage
-{
-    public string type;
-    public GuiColorsData gui_colors;
-    public List<ObjectData> objects;
-}
+    public void MoveUIOutOfWay()
+    {
+        if (uiCanvasInstance != null)
+        {
+            uiObstructedCount++;
 
-[System.Serializable]
-public class DangerDataMessage
-{
-    public string type;
-    public string danger_level;
-    public string danger_source;
-}
+            if (uiObstructedCount == 1)
+            {
+                // Save the original position
+                originalUIPosition = uiCanvasInstance.transform.position;
 
-[System.Serializable]
-public class GuiColorsData
-{
-    public ColorData background_color;
-    public ColorData text_color;
-}
+                // Calculate the new position to move the UI upward
+                targetUIPosition = originalUIPosition + new Vector3(0, uiMoveAmount, 0);
 
-[System.Serializable]
-public class ColorData
-{
-    public int r;
-    public int g;
-    public int b;
-}
+                isUIMoving = true;
+            }
+        }
+    }
 
-[System.Serializable]
-public class ObjectData
-{
-    public float x;
-    public float y;
-    public float z;
-    public string id;
-}
+    public void ReturnUIToOriginalPosition()
+    {
+        if (uiCanvasInstance != null)
+        {
+            uiObstructedCount = Mathf.Max(0, uiObstructedCount - 1);
 
-[System.Serializable]
-public class RotationData
-{
-    public float x;
-    public float y;
-    public float z;
-    public float w;
-}
+            if (uiObstructedCount == 0)
+            {
+                // Return UI to original position
+                targetUIPosition = originalUIPosition;
+                isUIMoving = true;
+            }
+        }
+    }
 
-[System.Serializable]
-public class ImageDataMessage
-{
-    public string type;
-    public ObjectData data;
-    public RotationData rotation;
-    public string imageData;
+    // Serializable classes for JSON deserialization
 
-    public float fx;
-    public float fy;
-    public float cx;
-    public float cy;
+    [System.Serializable]
+    public class FrameDataMessage
+    {
+        public string type;
+        public GuiColorsData gui_colors;
+        public List<ObjectData> objects;
+    }
+
+    [System.Serializable]
+    public class DangerDataMessage
+    {
+        public string type;
+        public string danger_level;
+        public string danger_source;
+    }
+
+    [System.Serializable]
+    public class GuiColorsData
+    {
+        public ColorData background_color;
+        public ColorData text_color;
+    }
+
+    [System.Serializable]
+    public class ColorData
+    {
+        public int r;
+        public int g;
+        public int b;
+    }
+
+    [System.Serializable]
+    public class ObjectData
+    {
+        public float x;
+        public float y;
+        public float z;
+        public string id;
+    }
+
+    [System.Serializable]
+    public class RotationData
+    {
+        public float x;
+        public float y;
+        public float z;
+        public float w;
+    }
+
+    [System.Serializable]
+    public class ImageDataMessage
+    {
+        public string type;
+        public ObjectData data;
+        public RotationData rotation;
+        public string imageData;
+
+        public float fx;
+        public float fy;
+        public float cx;
+        public float cy;
+    }
 }
