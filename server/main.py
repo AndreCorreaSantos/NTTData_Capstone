@@ -1,5 +1,5 @@
-# server_main.py
 
+import traceback
 from fastapi import FastAPI, WebSocket
 import uvicorn
 from PIL import Image
@@ -114,7 +114,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 image_np = np.array(image)
             except Exception as e:
-                print(f"Failed to decode image data: {e}")
+                print(traceback.format_exc())
                 continue
 
             if image_type == "color":
@@ -145,7 +145,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             # Check if the detected class is "person"
                             if(det["name"] == "person"):
                                 print("Person detected")
-                                object_position = process_image(
+                                obj_data = process_image(
                                     current_frame,
                                     depth_frame,
                                     det,  # Single detection
@@ -156,17 +156,19 @@ async def websocket_endpoint(websocket: WebSocket):
                                     cx,
                                     cy,
                                 )
-                                # print("Object Position: ", object_position)
-                                if object_position:
+                                # print("Object Position: ", obj_data)
+                                if obj_data:
                                     obj_id = "-1"
                                     if det.get('track_id') is not None:
                                         obj_id = det['track_id'] 
                                     
                                     objects_data.append({
-                                        "x": object_position['x'],
-                                        "y": object_position['y'],
-                                        "z": object_position['z'],
-                                        "id": obj_id
+                                        "x": obj_data['x'],
+                                        "y": obj_data['y'],
+                                        "z": obj_data['z'],
+                                        "id": obj_id,
+                                        "width": obj_data['width'], 
+                                        "height": obj_data['height']
                                     })
                             
 
@@ -201,7 +203,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     async with locks.websocket_lock:
                         await websocket.send_text(json.dumps(frame_data_message))
                 except Exception as e:
-                    print(f"Failed to send frame data message: {e}")
+                    print(traceback.format_exc())
 
                 # Display the color image (optional, useful for debugging)
 
@@ -220,7 +222,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 cv2.waitKey(1)
 
     except Exception as e:
-        print(f"Error: {e}")
+        print(traceback.format_exc())
     finally:
         cv2.destroyAllWindows()
 

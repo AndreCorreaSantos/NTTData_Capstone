@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import json
+import traceback
 
 def quaternion_to_rotation_matrix(qx, qy, qz, qw):
     return np.array([
@@ -51,17 +52,19 @@ def process_image(current_frame, depth_image, detection, rotation, position, fx,
         # Transform point from camera coordinates to world coordinates
         P_world = R @ P_camera + T  # If R represents camera-to-world rotation
 
-        object_position = {
+        obj_data = {
             'x': float(P_world[0]),
             'y': float(P_world[1]),
-            'z': float(P_world[2])
+            'z': float(P_world[2]),
+            "width" : 3.0,
+            "height" : 3.0,
         }
 
-        print(f"Object position: {object_position}")
-        return object_position
+        print(f"Object position: {obj_data}")
+        return obj_data
 
     except Exception as e:
-        print(f"Error in process_image: {e}")
+        print(traceback.format_exc())
         return None
 
 import cv2

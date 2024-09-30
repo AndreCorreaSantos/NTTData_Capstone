@@ -811,6 +811,9 @@ MonoBehaviour:
   NotiffBlock: {fileID: 1315485181}
   dangerLevel: {fileID: 1946530151}
   dangerSource: {fileID: 1111367581}
+  uiFollowSpeed: 5
+  uiMoveAmount: 1
+  uiMoveDuration: 0.5
 --- !u!114 &700190882
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1701,8 +1704,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8766024634595469703, guid: 8f2c1ffdafd49a943ac79dc0ff480220,
         type: 3}
+      propertyPath: field of view
+      value: 60.000004
+      objectReference: {fileID: 0}
+    - target: {fileID: 8766024634595469703, guid: 8f2c1ffdafd49a943ac79dc0ff480220,
+        type: 3}
+      propertyPath: m_FocalLength
+      value: 20.78461
+      objectReference: {fileID: 0}
+    - target: {fileID: 8766024634595469703, guid: 8f2c1ffdafd49a943ac79dc0ff480220,
+        type: 3}
       propertyPath: far clip plane
-      value: 20
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 8766024634595469703, guid: 8f2c1ffdafd49a943ac79dc0ff480220,
         type: 3}
@@ -1713,6 +1726,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_CullingMask.m_Bits
       value: 4294967295
+      objectReference: {fileID: 0}
+    - target: {fileID: 8766024634595469703, guid: 8f2c1ffdafd49a943ac79dc0ff480220,
+        type: 3}
+      propertyPath: m_projectionMatrixMode
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

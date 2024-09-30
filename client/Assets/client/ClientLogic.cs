@@ -202,23 +202,9 @@ public class ClientLogic : MonoBehaviour
         // Handle object positions
         if (frameData.objects != null && frameData.objects.Count > 0)
         {
-            foreach (ObjectData ObjectData in frameData.objects)
+            foreach (ObjectData objData in frameData.objects)
             {
-                if (ObjectData != null)
-                {
-                    Vector3 objectPosition = new Vector3(
-                        ObjectData.x,
-                        ObjectData.y,
-                        ObjectData.z
-                    );
-
-                    string id = ObjectData.id;
-                    SpawnAnchor(objectPosition, id);
-                }
-                else
-                {
-                    Debug.LogWarning("No object positions received.");
-                }
+                SpawnAnchor(objData);
             }
         }
     }
@@ -247,9 +233,11 @@ public class ClientLogic : MonoBehaviour
         colorSetter.SetColor(targetBackgroundColor, targetTextColor);
     }
 
-    private void SpawnAnchor(Vector3 position, string id)
+    private void SpawnAnchor(ObjectData objData)
     {
-        Vector3 worldPosition = position;
+        Vector3 worldPosition = new Vector3(objData.x, objData.y, objData.z);
+        Vector3 localScale = new Vector3(objData.width, objData.height, 1f);
+        string id = objData.id;
 
         // Check if anchor already exists --> set position
         if (anchors.ContainsKey(id))
@@ -264,10 +252,12 @@ public class ClientLogic : MonoBehaviour
                                                 playerCamera.transform.position.z);
 
             anchor.transform.LookAt(targetPosition);
+            anchor.transform.localScale = localScale;
             return;
         }
 
         GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
+        newAnchor.transform.localScale = localScale;
         Anchor anchorScript = newAnchor.GetComponent<Anchor>();
         anchorScript.id = id;
         anchorScript.client = this;
@@ -330,7 +320,7 @@ public class ClientLogic : MonoBehaviour
         ImageDataMessage dataObject = new ImageDataMessage
         {
             type = imageType,
-            data = new ObjectData { x = pos.x, y = pos.y, z = pos.z, id = "Null" },
+            data = new ObjectData { x = pos.x, y = pos.y, z = pos.z, id = "Null", height = 0, width = 0 },
             rotation = new RotationData { x = rot.x, y = rot.y, z = rot.z, w = rot.w },
             imageData = System.Convert.ToBase64String(imageBytes),
             fx = fx,
@@ -454,6 +444,8 @@ public class ClientLogic : MonoBehaviour
         public float y;
         public float z;
         public string id;
+        public float width;
+        public float height;
     }
 
     [System.Serializable]
