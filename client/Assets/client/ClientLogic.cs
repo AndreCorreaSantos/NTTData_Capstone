@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Threading.Tasks;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 
@@ -62,8 +63,10 @@ public class ClientLogic : MonoBehaviour
             for (int i = 0; i < UIWorldCorners.Length; i++)
             {
                 Vector3 UIscreenCorner = playerCamera.WorldToScreenPoint(UIWorldCorners[i]);
+                UIscreenCorner.x /= Screen.width;
+                UIscreenCorner.y /= Screen.height;
                 UIScreenCorners[i] = UIscreenCorner;
-                //Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
+                Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
             }
 
             Texture2D colorTexture = ConvertToTexture2D(colorImage.texture);
@@ -182,12 +185,12 @@ public class ClientLogic : MonoBehaviour
         // Handle GUI colors
         if (frameData.gui_colors != null)
         {
-            Color backgroundColor = new Color(
+            Color targetBackgroundColor = new Color(
                 frameData.gui_colors.background_color.r / 255f,
                 frameData.gui_colors.background_color.g / 255f,
                 frameData.gui_colors.background_color.b / 255f
             );
-            Color textColor = new Color(
+            Color targetTextColor = new Color(
                 frameData.gui_colors.text_color.r / 255f,
                 frameData.gui_colors.text_color.g / 255f,
                 frameData.gui_colors.text_color.b / 255f
@@ -196,7 +199,7 @@ public class ClientLogic : MonoBehaviour
             setColors colorSetter = uiCanvasInstance.GetComponent<setColors>();
             if (colorSetter != null)
             {
-                colorSetter.SetColor(backgroundColor, textColor);
+                StartCoroutine(LerpColors(colorSetter, targetBackgroundColor, targetTextColor, 0.5f));
             }
             else
             {
@@ -227,6 +230,31 @@ public class ClientLogic : MonoBehaviour
             }
         }
     }
+
+    private IEnumerator LerpColors(setColors colorSetter, Color targetBackgroundColor, Color targetTextColor, float duration)
+    {
+        Color startBackgroundColor = colorSetter.Background.color;
+        Color startTextColor = colorSetter.textObjects[0].color;
+        float time = 0;
+
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+            float t = time / duration;
+
+            // Lerp the colors
+            colorSetter.SetColor(
+                Color.Lerp(startBackgroundColor, targetBackgroundColor, t),
+                Color.Lerp(startTextColor, targetTextColor, t)
+            );
+
+            yield return null; // Wait for the next frame
+        }
+
+        // Ensure the final colors are set
+        colorSetter.SetColor(targetBackgroundColor, targetTextColor);
+    }
+
 
     private void SpawnAnchor(Vector3 position, string id)
     {
