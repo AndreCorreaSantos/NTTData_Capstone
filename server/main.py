@@ -99,6 +99,7 @@ async def websocket_endpoint(websocket: WebSocket):
             fy = data.get('fy')  # Camera intrinsic fy
             cx = data.get('cx')  # Camera principal point x
             cy = data.get('cy')  # Camera principal point y
+            ui_screen_corners = data.get('UIScreenCorners')
 
             # Validate essential fields
             if image_type is None or image_data_base64 is None:
@@ -121,7 +122,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 current_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
                 # Calculate GUI colors
-                gui_back_color, gui_text_color = calculate_background_colors(current_frame)
+                gui_back_color, gui_text_color, interior_roi = calculate_background_colors(current_frame, ui_screen_corners)
 
                 # Initialize list to hold positions of all detected persons
                 objects_data = []
@@ -203,7 +204,10 @@ async def websocket_endpoint(websocket: WebSocket):
                     print(f"Failed to send frame data message: {e}")
 
                 # Display the color image (optional, useful for debugging)
-                cv2.imshow("Color Image", current_frame)
+
+                width, height = interior_roi.shape[:2]
+                if(width > 0 and height > 0):
+                    cv2.imshow("Color Image", interior_roi)
                 # depth_frame_normalized = cv2.normalize(depth_frame, None, 0, 255, cv2.NORM_MINMAX)
                 # depth_frame_normalized = np.uint8(depth_frame_normalized)
 
