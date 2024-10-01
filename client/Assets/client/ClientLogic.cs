@@ -238,16 +238,13 @@ public class ClientLogic : MonoBehaviour
         colorSetter.SetColor(targetBackgroundColor, targetTextColor);
     }
 
-    Vector3 GetWorldPositionFromScreenSpace(Vector3 screenPos) {
+    Vector3 GetWorldPositionFromScreenSpace(Vector3 screenPos,Matrix4x4 invMat) {
         // Convert screen position to normalized device coordinates (NDC)
         float ndcX = (screenPos.x - (Screen.width * 0.5f)) / (Screen.width * 0.5f);  // Range [-1, 1]
         float ndcY = (screenPos.y - (Screen.height * 0.5f)) / (Screen.height * 0.5f); // Range [-1, 1]
 
         // Create a point in NDC space (using the near clip plane for z = -1)
         Vector4 nearClipPoint = new Vector4(ndcX, -ndcY, -1.0f, 1.0f);
-
-        // Inverse the combined projection and view matrix
-        Matrix4x4 invMat = (playerCamera.projectionMatrix * playerCamera.worldToCameraMatrix).inverse;
 
         // Transform the NDC point to world space using the inverse matrix
         Vector4 worldNear = invMat * nearClipPoint;
@@ -268,7 +265,8 @@ public class ClientLogic : MonoBehaviour
         int width = Screen.width;
         int height = Screen.height;
         Vector3 screenPosition = new Vector3(width - objData.x, objData.y,objData.z);
-        Vector3 worldPosition = GetWorldPositionFromScreenSpace(screenPosition);
+        Matrix4x4 invMat = (playerCamera.projectionMatrix * playerCamera.worldToCameraMatrix).inverse;
+        Vector3 worldPosition = GetWorldPositionFromScreenSpace(screenPosition,invMat);
         redDot.transform.position = worldPosition;
         
         //debug direction
