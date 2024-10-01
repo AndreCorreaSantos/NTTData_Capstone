@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import json
+import colorsys
 
 def quaternion_to_rotation_matrix(qx, qy, qz, qw):
     return np.array([
@@ -97,6 +98,104 @@ def LAB_to_RGB(L, a, b):
 
     return int(r*255), int(g*255), int(b*255)
 
+def relative_luminance(r, g, b):
+    """
+    Calculates the relative luminance of a color in the RGB color space.
+
+    Parameters:
+    r (int): Red component of the color.
+    g (int): Green component of the color.
+    b (int): Blue component of the color.
+
+    Returns:
+    float: Relative luminance of the color.
+    """
+
+    r = r / 255
+    g = g / 255
+    b = b / 255
+
+    r = r / 12.92 if r <= 0.03928 else ((r + 0.055) / 1.055) ** 2.4
+    g = g / 12.92 if g <= 0.03928 else ((g + 0.055) / 1.055) ** 2.4
+    b = b / 12.92 if b <= 0.03928 else ((b + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+def rgb_to_hsl(r, g, b):
+    """Convert RGB to HSL."""
+    r /= 255.0
+    g /= 255.0
+    b /= 255.0
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    return h, l, s
+
+def hsl_to_rgb(h, l, s):
+    """Convert HSL to RGB."""
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return int(r * 255), int(g * 255), int(b * 255)
+
+def check_and_adjust_contrast(gui_back_color, text_color_bgr, target_ratio=4.5):
+    """
+    Checks the contrast ratio between the background and text color. 
+    Adjusts the text color's lightness and saturation, maintaining its hue. 
+    If no suitable adjustment is found, adjusts the background color.
+
+    Parameters:
+    gui_back_color (tuple): The RGB color of the GUI background (R, G, B).
+    text_color_bgr (tuple): The BGR color of the text (B, G, R).
+    target_ratio (float): Desired minimum contrast ratio, typically 4.5 or 7.0 for accessibility.
+
+    Returns:
+    tuple: The adjusted (background color, text color), with both colors as RGB values.
+    """
+
+    def calculate_contrast(lum1, lum2):
+        l1 = min(lum1, lum2)
+        l2 = max(lum1, lum2)
+        return (l2 + 0.05) / (l1 + 0.05)
+
+    # Calculate initial luminance
+    rel_l_background = relative_luminance(gui_back_color[0], gui_back_color[1], gui_back_color[2])
+    rel_l_text = relative_luminance(text_color_bgr[2], text_color_bgr[1], text_color_bgr[0])
+
+    # Calculate initial contrast ratio
+    contrast_ratio = calculate_contrast(rel_l_background, rel_l_text)
+
+    # If contrast is already sufficient, return the current background and text color
+    if contrast_ratio >= target_ratio:
+        return gui_back_color, text_color_bgr
+
+    # Step 1: Try adjusting the text color's lightness and saturation while keeping its hue
+    h, l, s = rgb_to_hsl(text_color_bgr[2], text_color_bgr[1], text_color_bgr[0])
+
+    for lightness_adjustment in range(0, 101, 5):  # Lightness in percentages from 0 to 100
+        adjusted_lightness = lightness_adjustment / 100.0
+        adjusted_text_color_rgb = hsl_to_rgb(h, adjusted_lightness, s)
+        rel_l_text_adjusted = relative_luminance(adjusted_text_color_rgb[0], adjusted_text_color_rgb[1], adjusted_text_color_rgb[2])
+
+        # Recalculate contrast with adjusted luminance
+        new_contrast_ratio = calculate_contrast(rel_l_background, rel_l_text_adjusted)
+
+        # If the new contrast ratio meets the requirement, return the original background and adjusted text color
+        if new_contrast_ratio >= target_ratio:
+            return gui_back_color, adjusted_text_color_rgb
+
+    # Step 2: If no suitable text color adjustment was found, adjust the background color
+    for brightness in range(0, 256, 5):  # Brightness from 0 to 255 in steps of 5
+        adjusted_back_color = (brightness, brightness, brightness)  # Adjust background brightness
+        rel_l_background_adjusted = relative_luminance(adjusted_back_color[0], adjusted_back_color[1], adjusted_back_color[2])
+
+        # Recalculate contrast with the original text color
+        new_contrast_ratio = calculate_contrast(rel_l_background_adjusted, rel_l_text)
+
+        # If the new contrast ratio meets the requirement, return the adjusted background and original text color
+        if new_contrast_ratio >= target_ratio:
+            return adjusted_back_color, text_color_bgr
+
+    # Step 3: If no suitable adjustment is found, return the final adjusted background and text colors
+    return gui_back_color, text_color_bgr
+
+
 
 def calculate_background_colors(image, UIScreenCorners):
     """
@@ -185,24 +284,27 @@ def calculate_background_colors(image, UIScreenCorners):
     L_new_scaled = L_new * (255 / 100)
     
     # Create a new LAB color using the adjusted lightness
-    new_color_lab = np.uint8([[[L_new_scaled, a, b]]])
+    background_new_color_lab = np.uint8([[[L_new_scaled, a, b]]])
     
     # Convert the new LAB color back to BGR format
-    new_color_bgr = cv2.cvtColor(new_color_lab, cv2.COLOR_LAB2BGR)
+    background_new_color_bgr = cv2.cvtColor(background_new_color_lab, cv2.COLOR_LAB2BGR)
 
     # Define the GUI background color in BGR format
     gui_back_color = (
-        int(new_color_bgr[0, 0, 2]),  # R
-        int(new_color_bgr[0, 0, 1]),  # G
-        int(new_color_bgr[0, 0, 0])   # B
+        int(background_new_color_bgr[0, 0, 2]),  # R
+        int(background_new_color_bgr[0, 0, 1]),  # G
+        int(background_new_color_bgr[0, 0, 0])   # B
     )
 
     # Calculate a lighter color for text, based on white in LAB color space
-    white_color_bgr = LAB_to_RGB(100, 0, 0)  # Function to convert LAB white to RGB (White for now)
+    # https://www.w3.org/WAI/WCAG21/Techniques/general/G18
+    text_color_bgr = gui_back_color #  Use the new color as the base for text color
+    gui_back_color, text_color_bgr = check_and_adjust_contrast(gui_back_color, text_color_bgr)
+
     gui_text_color = (
-        int(white_color_bgr[0]),
-        int(white_color_bgr[1]),
-        int(white_color_bgr[2])
+        int(text_color_bgr[0]),
+        int(text_color_bgr[1]),
+        int(text_color_bgr[2])
     )
 
     # Return the calculated GUI background and text colors, along with the ROI
