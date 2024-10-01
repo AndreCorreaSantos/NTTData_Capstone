@@ -279,7 +279,7 @@ public class ClientLogic : MonoBehaviour
     {
         if (anchors.ContainsKey(id))
         {
-            Destroy(anchors[id]);
+            // Destroy(anchors[id]);
             anchors.Remove(id);
         }
     }

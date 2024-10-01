@@ -22,8 +22,17 @@ public class Anchor : MonoBehaviour
 
     public string id;
 
-    private bool DebugMode = false;
-    private bool isUICurrentlyHit = false;
+    private bool DebugMode = true;
+    private bool isUICurrentlyMoved = false;
+
+    private enum RaycastHitType
+    {
+        None,
+        MainCollider,
+        SideCollider,
+        Player,
+        Other
+    }
 
     void Start()
     {
@@ -39,14 +48,17 @@ public class Anchor : MonoBehaviour
             lineInstance = Instantiate(linePrefab, transform.position, Quaternion.identity);
         }
 
-        // Ensure the raycastLayerMask includes the UI layer
-        // If not set in the inspector, you can set it here
+        // Ensure the raycastLayerMask includes the layers of the colliders
         if (raycastLayerMask == 0)
         {
             // Include all layers
             raycastLayerMask = Physics.DefaultRaycastLayers;
             // Include UI layer explicitly
             raycastLayerMask |= 1 << LayerMask.NameToLayer("UI");
+            // Include layers for mainCollider and sideCollider if they are on different layers
+            // For example:
+            // raycastLayerMask |= 1 << LayerMask.NameToLayer("YourMainColliderLayer");
+            // raycastLayerMask |= 1 << LayerMask.NameToLayer("YourSideColliderLayer");
         }
     }
 
@@ -71,20 +83,28 @@ public class Anchor : MonoBehaviour
 
     void DoAllRaycasts()
     {
-        bool anyUIHit = false;
+        bool mainColliderHit = false;
+        bool sideColliderHit = false;
+
         foreach (Transform point in raycastOrigins)
         {
             Vector3 origin = point.position;
-            if (PerformRaycast(origin))
+            RaycastHitType hitType = PerformRaycast(origin);
+
+            if (hitType == RaycastHitType.MainCollider)
             {
-                anyUIHit = true;
+                mainColliderHit = true;
+            }
+            else if (hitType == RaycastHitType.SideCollider)
+            {
+                sideColliderHit = true;
             }
         }
 
-        HandleUIHit(anyUIHit);
+        HandleUIHit(mainColliderHit, sideColliderHit);
     }
 
-    private bool PerformRaycast(Vector3 origin)
+    private RaycastHitType PerformRaycast(Vector3 origin)
     {
         // Calculate the direction from the raycast origin to the player
         Vector3 directionToPlayer = (playerTransform.position - origin).normalized;
@@ -93,49 +113,63 @@ public class Anchor : MonoBehaviour
         RaycastHit hitInfo;
         if (Physics.Raycast(origin, directionToPlayer, out hitInfo, Mathf.Infinity, raycastLayerMask))
         {
+            // Visualize the raycast in the Scene view
+            if (DebugMode)
+            {
+                Debug.DrawRay(origin, directionToPlayer * 1000f, Color.red, raycastInterval);
+            }
+
             // The raycast hit something
             if (hitInfo.transform == playerTransform)
             {
                 if (DebugMode) Debug.Log("Anchor raycast hit the player!");
-                return false;
+                return RaycastHitType.Player;
             }
-            else if (hitInfo.transform.gameObject.layer == LayerMask.NameToLayer("UI"))
+            else if (hitInfo.transform.CompareTag("mainCollider"))
             {
-                if (DebugMode) Debug.Log("Anchor raycast hit the UI!");
-                return true;
+                if (DebugMode) Debug.Log("Anchor raycast hit the mainCollider!");
+                return RaycastHitType.MainCollider;
+            }
+            else if (hitInfo.transform.CompareTag("sideCollider"))
+            {
+                if (DebugMode) Debug.Log("Anchor raycast hit a sideCollider!");
+                return RaycastHitType.SideCollider;
             }
             else
             {
                 if (DebugMode) Debug.Log("Anchor raycast hit: " + hitInfo.transform.name);
-                return false;
+                return RaycastHitType.Other;
             }
         }
         else
         {
             // The raycast did not hit anything
             if (DebugMode) Debug.Log("Anchor raycast did not hit anything.");
-            return false;
+            return RaycastHitType.None;
         }
     }
 
-    private void HandleUIHit(bool isHit)
+    private void HandleUIHit(bool mainColliderHit, bool sideColliderHit)
     {
-        if (isHit && !isUICurrentlyHit)
+        if ((mainColliderHit || sideColliderHit) && !isUICurrentlyMoved)
         {
-            isUICurrentlyHit = true;
+            // Move the UI out of the way if it's not already moved
+            isUICurrentlyMoved = true;
             if (client != null)
             {
                 client.MoveUIOutOfWay();
             }
         }
-        else if (!isHit && isUICurrentlyHit)
+        else if (!mainColliderHit && !sideColliderHit && isUICurrentlyMoved)
         {
-            isUICurrentlyHit = false;
+            // Return the UI to its original position if no colliders are hit
+            isUICurrentlyMoved = false;
             if (client != null)
             {
                 client.ReturnUIToOriginalPosition();
             }
         }
+        // If the UI is already moved and any collider is hit, do nothing (keep it moved)
     }
 
     private void UpdateLine()
@@ -159,12 +193,7 @@ public class Anchor : MonoBehaviour
     {
         yield return new WaitForSeconds(3);
 
-        // Check if the UI was being obstructed by this anchor
-        if (isUICurrentlyHit)
-        {
-            // Inform the client to decrement uiObstructedCount
-            HandleUIHit(false);
-        }
+        // Ensure the UI is reset when this anchor is destroyed
 
         client.DeleteAnchor(id);
 
@@ -172,13 +201,18 @@ public class Anchor : MonoBehaviour
         {
             Destroy(lineInstance);
         }
-
+        yield return new WaitForSeconds(1.0f);
         Destroy(gameObject);
+        if (isUICurrentlyMoved)
+        {
+            HandleUIHit(false, false);
+        }
+
     }
 
     private void OnDestroy()
     {
-        if (isUICurrentlyHit)
+        if (isUICurrentlyMoved)
         {
             if (client != null)
             {
