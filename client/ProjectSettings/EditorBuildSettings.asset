@@ -32,7 +32,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/ARKit/ThermalState/ThermalState.unity
     guid: e5b0cb11dfe354e67a344c280bf8b611
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Anchors/Anchors.unity
     guid: 5cba9114a192a46a7aef31da62316e39
   - enabled: 0
@@ -176,7 +176,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/BoundingBoxDetection/BoundingBoxes.unity
     guid: e5d8c18ab0c954fd4a7aee48dffe9836
-  - enabled: 0
+  - enabled: 1
     path: Assets/client/clientScene.unity
     guid: 0ec9f91c7a0d2734ab7774ba382ba2f6
   m_configObjects:
