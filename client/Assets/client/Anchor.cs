@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Anchor : MonoBehaviour
@@ -14,12 +15,14 @@ public class Anchor : MonoBehaviour
     private float timeSinceLastRaycast = 0f;
     public float raycastInterval = 0.2f; // Raycast every 0.2 seconds
 
+    public List<Transform> raycastOrigins;
+
     public GameObject linePrefab;
     public GameObject lineInstance;
 
     public string id;
 
-    private bool DebugMode = true;
+    private bool DebugMode = false;
     private bool isUICurrentlyHit = false;
 
     void Start()
@@ -30,6 +33,7 @@ public class Anchor : MonoBehaviour
         {
             Debug.LogWarning("PlayerTransform is not assigned in Anchor. Please assign it from ClientLogic.");
         }
+
         if (DebugMode)
         {
             lineInstance = Instantiate(linePrefab, transform.position, Quaternion.identity);
@@ -41,6 +45,8 @@ public class Anchor : MonoBehaviour
         {
             // Include all layers
             raycastLayerMask = Physics.DefaultRaycastLayers;
+            // Include UI layer explicitly
+            raycastLayerMask |= 1 << LayerMask.NameToLayer("UI");
         }
     }
 
@@ -54,47 +60,61 @@ public class Anchor : MonoBehaviour
             if (timeSinceLastRaycast >= raycastInterval)
             {
                 timeSinceLastRaycast = 0f;
-
-                // Calculate the direction from the anchor to the player
-                Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
-
-                // Perform the raycast
-                RaycastHit hitInfo;
-                if (Physics.Raycast(transform.position, directionToPlayer, out hitInfo, Mathf.Infinity, raycastLayerMask))
-                {
-                    // The raycast hit something
-                    if (hitInfo.transform == playerTransform)
-                    {
-                        if (DebugMode) Debug.Log("Anchor raycast hit the player!");
-                        HandleUIHit(false);
-                    }
-                    else if (hitInfo.transform.gameObject.layer == LayerMask.NameToLayer("UI"))
-                    {
-                        if (DebugMode) Debug.Log("Anchor raycast hit the UI!");
-                        HandleUIHit(true);
-                    }
-                    else
-                    {
-                        if (DebugMode) Debug.Log("Anchor raycast hit: " + hitInfo.transform.name);
-                        HandleUIHit(false);
-                    }
-                }
-                else
-                {
-                    // The raycast did not hit anything
-                    if (DebugMode) Debug.Log("Anchor raycast did not hit anything.");
-                    HandleUIHit(false);
-                }
-
-                if (DebugMode)
-                {
-                    UpdateLine();
-                }
+                DoAllRaycasts();
             }
         }
         else
         {
             Debug.LogWarning("PlayerTransform is not assigned in Anchor.");
+        }
+    }
+
+    void DoAllRaycasts()
+    {
+        bool anyUIHit = false;
+        foreach (Transform point in raycastOrigins)
+        {
+            Vector3 origin = point.position;
+            if (PerformRaycast(origin))
+            {
+                anyUIHit = true;
+            }
+        }
+
+        HandleUIHit(anyUIHit);
+    }
+
+    private bool PerformRaycast(Vector3 origin)
+    {
+        // Calculate the direction from the raycast origin to the player
+        Vector3 directionToPlayer = (playerTransform.position - origin).normalized;
+
+        // Perform the raycast
+        RaycastHit hitInfo;
+        if (Physics.Raycast(origin, directionToPlayer, out hitInfo, Mathf.Infinity, raycastLayerMask))
+        {
+            // The raycast hit something
+            if (hitInfo.transform == playerTransform)
+            {
+                if (DebugMode) Debug.Log("Anchor raycast hit the player!");
+                return false;
+            }
+            else if (hitInfo.transform.gameObject.layer == LayerMask.NameToLayer("UI"))
+            {
+                if (DebugMode) Debug.Log("Anchor raycast hit the UI!");
+                return true;
+            }
+            else
+            {
+                if (DebugMode) Debug.Log("Anchor raycast hit: " + hitInfo.transform.name);
+                return false;
+            }
+        }
+        else
+        {
+            // The raycast did not hit anything
+            if (DebugMode) Debug.Log("Anchor raycast did not hit anything.");
+            return false;
         }
     }
 

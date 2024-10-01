@@ -236,7 +236,7 @@ public class ClientLogic : MonoBehaviour
     private void SpawnAnchor(ObjectData objData)
     {
         Vector3 worldPosition = new Vector3(objData.x, objData.y, objData.z);
-        Vector3 localScale = new Vector3(objData.width, objData.height, 1f);
+        Vector3 localScale = new Vector3(objData.width, objData.height, objData.width);
         string id = objData.id;
 
         // Check if anchor already exists --> set position
