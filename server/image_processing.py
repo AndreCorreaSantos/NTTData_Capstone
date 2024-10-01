@@ -15,8 +15,8 @@ def project_to_world(x, y, depth, fx, fy, cx, cy, camera_position, camera_rotati
 
     # Convert pixel coordinates to normalized image coordinates
     Zc = depth
-    Xc = (cx - x) * Zc / fx
-    Yc = (cy - y) * Zc / fy  # Invert y coordinate
+    Xc = (x - cx) * Zc / fx
+    Yc = (y - cy) * Zc / fy  # Invert y coordinate
     P_camera = np.array([Xc, Yc, Zc])
 
     # Get rotation matrix from quaternion
@@ -43,11 +43,15 @@ def process_image(current_frame, depth_image, detection, rotation, position, fx,
         cv2.rectangle(current_frame, (box_values[0], box_values[1]), (box_values[2], box_values[3]), (0, 255, 0), 2)
 
         # Compute the center of the bounding box
+        image_height, image_width, channels = current_frame.shape
         x_center = (box_values[0] + box_values[2]) / 2.0
         y_center = (box_values[1] + box_values[3]) / 2.0
+
+        # x_center = image_width - x_center  # Invert x coordinate
+        # y_center = image_height - y_center  # Invert y coordinate
         cv2.circle(current_frame, (int(x_center), int(y_center)), 5, (0, 0, 255), -1)
 
-        image_height, image_width, channels = current_frame.shape
+        
 
         # Calculate mean depth over the bounding box
         depth = np.mean(depth_image[box_values[1]:box_values[3], box_values[0]:box_values[2]])
@@ -68,9 +72,9 @@ def process_image(current_frame, depth_image, detection, rotation, position, fx,
         object_height = abs(w_box_p1[1] - w_box_p2[1])  # Height in Y-axis
 
         obj_data = {
-            'x': float(center_world_position[0]),
-            'y': float(center_world_position[1]),
-            'z': float(center_world_position[2]),
+            'x': int(x_center),
+            'y': int(y_center),
+            'z': float(depth),
             'width': object_width,
             'height': object_height,
         }

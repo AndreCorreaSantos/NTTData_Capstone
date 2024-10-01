@@ -22,6 +22,8 @@ public class ClientLogic : MonoBehaviour
 
     private GameObject uiCanvasInstance;
 
+
+
     private byte[] colorImageBytes;
     private byte[] depthImageBytes;
 
@@ -42,11 +44,14 @@ public class ClientLogic : MonoBehaviour
     public float uiMoveDuration = 0.5f; // Time to move the UI when obstructed
     private int uiObstructedCount = 0;
 
+    public GameObject redDot;
+
     void Start()
     {
         StartWebSocket();
         SpawnUI();
         connection.OnServerMessage += HandleServerMessage;
+        redDot = Instantiate(redDot, new Vector3(0, 0, 0), Quaternion.identity);
     }
 
     void Update()
@@ -233,46 +238,79 @@ public class ClientLogic : MonoBehaviour
         colorSetter.SetColor(targetBackgroundColor, targetTextColor);
     }
 
+    Vector3 GetWorldPositionFromScreenSpace(Vector3 screenPos) {
+        // Convert screen position to normalized device coordinates (NDC)
+        float ndcX = (screenPos.x - (Screen.width * 0.5f)) / (Screen.width * 0.5f);  // Range [-1, 1]
+        float ndcY = (screenPos.y - (Screen.height * 0.5f)) / (Screen.height * 0.5f); // Range [-1, 1]
+
+        // Create a point in NDC space (using the near clip plane for z = -1)
+        Vector4 nearClipPoint = new Vector4(ndcX, -ndcY, -1.0f, 1.0f);
+
+        // Inverse the combined projection and view matrix
+        Matrix4x4 invMat = (playerCamera.projectionMatrix * playerCamera.worldToCameraMatrix).inverse;
+
+        // Transform the NDC point to world space using the inverse matrix
+        Vector4 worldNear = invMat * nearClipPoint;
+        
+        // Perform perspective divide to convert the Vector4 to Vector3
+        Vector3 worldNearPos = new Vector3(worldNear.x / worldNear.w, worldNear.y / worldNear.w, worldNear.z / worldNear.w);
+
+        // Get the camera's forward direction to compute ray direction
+        Vector3 rayDirection = (worldNearPos - playerCamera.transform.position).normalized;
+
+        // Scale the ray direction by the provided depth value (world space depth)
+        Vector3 worldPosition = playerCamera.transform.position + rayDirection * screenPos.z;
+
+        return worldPosition;
+    }
     private void SpawnAnchor(ObjectData objData)
     {
-        Vector3 worldPosition = new Vector3(objData.x, objData.y, objData.z);
-        Vector3 localScale = new Vector3(objData.width, objData.height, objData.width);
-        string id = objData.id;
+        int width = Screen.width;
+        int height = Screen.height;
+        Vector3 screenPosition = new Vector3(width - objData.x, objData.y,objData.z);
+        Vector3 worldPosition = GetWorldPositionFromScreenSpace(screenPosition);
+        redDot.transform.position = worldPosition;
+        
+        //debug direction
 
-        // Check if anchor already exists --> set position
-        if (anchors.ContainsKey(id))
-        {
-            Debug.Log("Anchor already exists");
-            GameObject anchor = anchors[id];
-            anchor.transform.position = worldPosition;
+        // Vector3 worldPosition = new Vector3(objData.x, objData.y, objData.z);
+        // Vector3 localScale = new Vector3(objData.width, objData.height, objData.width);
+        // string id = objData.id;
 
-            // Make the anchor face the player horizontally
-            Vector3 targetPosition = new Vector3(playerCamera.transform.position.x,
-                                                anchor.transform.position.y,
-                                                playerCamera.transform.position.z);
+        // // Check if anchor already exists --> set position
+        // if (anchors.ContainsKey(id))
+        // {
+        //     Debug.Log("Anchor already exists");
+        //     GameObject anchor = anchors[id];
+        //     anchor.transform.position = worldPosition;
 
-            anchor.transform.LookAt(targetPosition);
-            anchor.transform.localScale = localScale;
-            return;
-        }
+        //     // Make the anchor face the player horizontally
+        //     Vector3 targetPosition = new Vector3(playerCamera.transform.position.x,
+        //                                         anchor.transform.position.y,
+        //                                         playerCamera.transform.position.z);
 
-        GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
-        newAnchor.transform.localScale = localScale;
-        Anchor anchorScript = newAnchor.GetComponent<Anchor>();
-        anchorScript.id = id;
-        anchorScript.client = this;
-        anchorScript.playerTransform = playerCamera.transform; // Set playerTransform
-        anchors.Add(id, newAnchor);
-        newAnchor.layer = LayerMask.NameToLayer("Default"); // Adjust layer as needed
+        //     anchor.transform.LookAt(targetPosition);
+        //     anchor.transform.localScale = localScale;
+        //     return;
+        // }
 
-        if (anchorScript != null)
-        {
-            anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
-        }
-        else
-        {
-            Debug.LogWarning("Anchor component not found on the instantiated prefab.");
-        }
+        // GameObject newAnchor = Instantiate(anchorPrefab, worldPosition, Quaternion.identity);
+        // newAnchor.transform.localScale = localScale;
+        // Anchor anchorScript = newAnchor.GetComponent<Anchor>();
+        // anchorScript.id = id;
+        // anchorScript.client = this;
+        // anchorScript.playerTransform = playerCamera.transform; // Set playerTransform
+        // anchors.Add(id, newAnchor);
+        // newAnchor.layer = LayerMask.NameToLayer("Default"); // Adjust layer as needed
+
+        // if (anchorScript != null)
+        // {
+        //     anchorScript.playerTransform = playerCamera.transform; // Updated to use playerCamera
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("Anchor component not found on the instantiated prefab.");
+        // }
     }
 
     public void DeleteAnchor(string id)

@@ -209,7 +209,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 width, height = interior_roi.shape[:2]
                 if(width > 0 and height > 0):
-                    cv2.imshow("Color Image", interior_roi)
+                    cv2.imshow("Color Image", current_frame)
                 # depth_frame_normalized = cv2.normalize(depth_frame, None, 0, 255, cv2.NORM_MINMAX)
                 # depth_frame_normalized = np.uint8(depth_frame_normalized)
 
