@@ -16,18 +16,19 @@ os.environ["OPENAI_API_TYPE"] = "azure"
 os.environ["OPENAI_API_KEY"] = os.environ["AZURE_OPENAI_API_KEY"]
 os.environ["OPENAI_API_BASE"] = os.environ["AZURE_OPENAI_ENDPOINT"]
 
-async def send_result_to_websocket(message, websocket):
-    json_message = json.loads("{ \"title\": \"danger_analysis\" \n, \"content\":" + message.content + "\n}")
+async def send_result_to_websocket(message : str, websocket: WebSocket | None):
+    json_message = json.loads("{ \"title\": \"danger_analysis\" \n, \"content\":" + message + "\n}")
     try:
-        print(json_message)
+        pass
+        #print(json_message)
     except Exception as e:
         print(f"Erro {e}")
     
     if websocket is not None:
-        print("sending to websocket")
+        print(f"sending {message} to websocket")
         try:
             async with locks.websocket_lock:
-                await websocket.send_text(json.dumps(message.content))
+                await websocket.send_text(message)
         except Exception as e:
             print(f"Error: {e}")
 
@@ -43,7 +44,7 @@ async def get_all_images_from_dir(path_to_dir):
         for root, dirs, files in os.walk(path_to_dir):
             for file in files:
                 if regex.match(file):
-                    f_matches.append(file)
+                    f_matches.append(path_to_dir+file)
         print(f_matches)
         return f_matches
 
@@ -64,7 +65,7 @@ async def generate_prompt_from_images(images, sys_prompt, instructions):
     m_intructions.append(HumanMessage(content=[{"type": "text", "text": instructions}])),
     return ChatPromptTemplate.from_messages(m_intructions)
 
-async def run_analyzer(chat):
+async def run_analyzer(chat, websocket : WebSocket | None):
 
     images = await get_all_images_from_dir("./gpt/")
 
@@ -89,20 +90,16 @@ async def run_analyzer(chat):
                         You must consider things like open fires, step hazards, and things of that nature things of IMMEDIATE DANGER
                         Tou must consider things like potential flames, hazardous materials, train tracks, and other potential dangers as POTENTIAL DANGER
                         If you find nothing that can be considered dangerous on the image, you must consider the danger level as LOW DANGER
-                        You MUST only respond in the format of a valid json, as formatted below. DO NOT add json to the start of the message:
+                        Do not add do anything other than what is asked below.
+                        You MUST only respond in the format of a valid json, as formatted below. DO NOT add json to the start of the message. In case of multiple images, condense all the information into one single json object, that is of the same format as the one shown below:
                         {{
                             "type" : "danger_analysis"
-                            "danger_level": "{{level of danger detected on the image}}",
-                            "danger_source": "{{the source of danger, if detected. if none are detected, fill with NoDangerSources}}"
+                            "danger_level": "{{level of danger detected}}",
+                            "danger_source": "{{a brief piece of text describing the dangers detected. If none are detected, fill with No danger sources. Be brief in the description}}"
                         }}
-                        If there are multiple JSON answers, return a JSON list, which is denoted by 
-                            [
-                                {{json elements}}, 
-                                {{next json elements}} 
-                            ]
-                        In which all elements are present
+                        DO NOT add any text outside of the json
                     """
-    instruction_prompt = "Analyze all the images. Give me a response for each one of the images"
+    instruction_prompt = "Analyze all the images. Give me a response for the dangers detected in these images. Give me a single json response, not in a list"
 
     prompt = await generate_prompt_from_images(images, system_prompt, instruction_prompt)
 
@@ -116,7 +113,19 @@ async def run_analyzer(chat):
     chain = prompt | chat | output_parser
     #response = chain.invoke({"input": message})
     response = chain.invoke({})
-    print(response)
+    #print(response)
+
+    await send_result_to_websocket(response, websocket)
+
+async def start_danger_analysis_coroutine(websocket : WebSocket):
+    chat = AzureChatOpenAI(
+        deployment_name="grad-eng",  # Your deployment name
+        openai_api_version="2023-03-15-preview",
+        model="gpt-4o"
+    )
+    while True:
+        await run_analyzer(chat, websocket)
+        await asyncio.sleep(4)
 
 if __name__ == "__main__":
     chat = AzureChatOpenAI(
@@ -124,4 +133,4 @@ if __name__ == "__main__":
         openai_api_version="2023-03-15-preview",
         model="gpt-4o"
     )
-    asyncio.run(run_analyzer(chat))
+    asyncio.run(run_analyzer(chat, None))

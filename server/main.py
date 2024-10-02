@@ -12,6 +12,7 @@ import base64
 import aiofiles
 import os
 import locks
+import danger_analysis
 
 import asyncio
 from image_processing import process_image, calculate_background_colors
@@ -47,7 +48,7 @@ from datetime import datetime
 app = FastAPI()
 model = YOLO("yolov8n.pt")
 
-depth_model = load_depth_model()
+#depth_model = load_depth_model()
 
 now = datetime.now()
 
@@ -84,7 +85,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         # loop = asyncio.get_running_loop()
-        # asyncio.create_task(danger_analysis.run_analyzer(websocket))
+        asyncio.create_task(danger_analysis.start_danger_analysis_coroutine(websocket))
         while True:
 
             json_message = await websocket.receive_text()
@@ -110,13 +111,18 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 image_data_bytes = base64.b64decode(image_data_base64)
                 image = Image.open(io.BytesIO(image_data_bytes))
-                # asyncio.create_task(write_to_file_async(f"./gpt/captured_image_{now.strftime('%m-%d-%Y-%H-%M-%S')}.jpg", image))
+                asyncio.create_task(write_to_file_async(f"./gpt/captured_image_{now.strftime('%m-%d-%Y-%H-%M-%S')}.jpg", image))
 
                 image_np = np.array(image)
+
+
             except Exception as e:
                 print(traceback.format_exc())
                 continue
 
+            await asyncio.sleep(9)
+
+            """
             if image_type == "color":
                 # Convert RGB to BGR for OpenCV
                 current_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
@@ -220,6 +226,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Display the normalized depth image
                 cv2.imshow("Depth Image", depth_frame_normalized)
                 cv2.waitKey(1)
+            """
 
     except Exception as e:
         print(traceback.format_exc())
