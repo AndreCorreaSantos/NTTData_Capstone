@@ -52,7 +52,7 @@ public class ClientLogic : MonoBehaviour
         StartWebSocket();
         SpawnUI();
         connection.OnServerMessage += HandleServerMessage;
-        redDot = Instantiate(redDot, new Vector3(0, 0, 0), Quaternion.identity);
+        // redDot = Instantiate(redDot, new Vector3(0, 0, 0), Quaternion.identity);
     }
 
     void Update()
