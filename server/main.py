@@ -88,18 +88,22 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
 
             json_message = await websocket.receive_text()
-            data = json.loads(json_message)
+            message = json.loads(json_message)
 
-            image_type = data.get('type')
-            image_data_base64 = data.get('imageData')
-            position = data.get('data')
-            print("Position: ", position)   
-            rotation = data.get('rotation')
-            fx = data.get('fx')  # Camera intrinsic fx
-            fy = data.get('fy')  # Camera intrinsic fy
-            cx = data.get('cx')  # Camera principal point x
-            cy = data.get('cy')  # Camera principal point y
-            ui_screen_corners = data.get('UIScreenCorners')
+            image_type = message.get('type')
+            image_data_base64 = message.get('imageData')
+            data_message = message.get('data')
+            inv_mat_message = message.get('invMat')
+            ui_screen_corners = message.get('UIScreenCorners')
+
+            camera_position = np.array([data_message['x'], data_message['y'], data_message['z']])
+            print("Camera Position: ", camera_position)
+            inv_mat = np.array([
+                [inv_mat_message['e00'], inv_mat_message['e01'], inv_mat_message['e02'], inv_mat_message['e03']],
+                [inv_mat_message['e10'], inv_mat_message['e11'], inv_mat_message['e12'], inv_mat_message['e13']],
+                [inv_mat_message['e20'], inv_mat_message['e21'], inv_mat_message['e22'], inv_mat_message['e23']],
+                [inv_mat_message['e30'], inv_mat_message['e31'], inv_mat_message['e32'], inv_mat_message['e33']]
+            ])
 
             # Validate essential fields
             if image_type is None or image_data_base64 is None:
@@ -132,7 +136,6 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 # Depth estimation using Depth anything
                 depth_frame = depth_model.infer_image(image_np)
-
                 
                 for detection in results:
                     if detection is not None:
@@ -149,12 +152,8 @@ async def websocket_endpoint(websocket: WebSocket):
                                     current_frame,
                                     depth_frame,
                                     det,  # Single detection
-                                    rotation,
-                                    position,
-                                    fx,
-                                    fy,
-                                    cx,
-                                    cy,
+                                    inv_mat,
+                                    camera_position
                                 )
                                 # print("Object Position: ", obj_data)
                                 if obj_data:

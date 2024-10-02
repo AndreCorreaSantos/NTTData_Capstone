@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 
+
 public class ClientLogic : MonoBehaviour
 {
     public Connection connection;
@@ -262,11 +263,8 @@ public class ClientLogic : MonoBehaviour
     }
     private void SpawnAnchor(ObjectData objData)
     {
-        int width = Screen.width;
-        int height = Screen.height;
-        Vector3 screenPosition = new Vector3(width - objData.x, objData.y,objData.z);
-        Matrix4x4 invMat = (playerCamera.projectionMatrix * playerCamera.worldToCameraMatrix).inverse;
-        Vector3 worldPosition = GetWorldPositionFromScreenSpace(screenPosition,invMat);
+        
+        Vector3 worldPosition = new Vector3(objData.x, objData.y, objData.z);
         redDot.transform.position = worldPosition;
         
         //debug direction
@@ -336,33 +334,14 @@ public class ClientLogic : MonoBehaviour
     private async Task SendImageDataAsync(string imageType, byte[] imageBytes, int imageWidth, int imageHeight)
     {
         Vector3 pos = playerCamera.transform.position;
-        Quaternion rot = playerCamera.transform.rotation;
 
-        // Calculate camera intrinsics
-        float verticalFOV = playerCamera.fieldOfView; // in degrees
-        float aspectRatio = playerCamera.aspect; // width / height
-
-        // Convert FOV from degrees to radians
-        float verticalFOVRad = verticalFOV * Mathf.Deg2Rad;
-
-        // Compute focal lengths
-        float fy = (imageHeight / 2f) / Mathf.Tan(verticalFOVRad / 2f);
-        float fx = fy * aspectRatio;
-
-        // Principal points (assuming center of the image)
-        float cx = imageWidth / 2f;
-        float cy = imageHeight / 2f;
-
+        Matrix4x4 invMat = (playerCamera.projectionMatrix * playerCamera.worldToCameraMatrix).inverse;
         ImageDataMessage dataObject = new ImageDataMessage
         {
             type = imageType,
             data = new ObjectData { x = pos.x, y = pos.y, z = pos.z, id = "Null", height = 0, width = 0 },
-            rotation = new RotationData { x = rot.x, y = rot.y, z = rot.z, w = rot.w },
+            invMat = invMat,
             imageData = System.Convert.ToBase64String(imageBytes),
-            fx = fx,
-            fy = fy,
-            cx = cx,
-            cy = cy,
             UIScreenCorners = UIScreenCorners
         };
 
@@ -484,21 +463,13 @@ public class ClientLogic : MonoBehaviour
         public float height;
     }
 
-    [System.Serializable]
-    public class RotationData
-    {
-        public float x;
-        public float y;
-        public float z;
-        public float w;
-    }
 
     [System.Serializable]
     public class ImageDataMessage
     {
         public string type;
         public ObjectData data;
-        public RotationData rotation;
+        public Matrix4x4 invMat;
         public string imageData;
 
         public float fx;

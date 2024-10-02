@@ -10,29 +10,56 @@ def quaternion_to_rotation_matrix(qx, qy, qz, qw):
         [2*(qx*qz - qy*qw),         2*(qy*qz + qx*qw),     1 - 2*(qx**2 + qy**2)]
     ])
 
-def project_to_world(x, y, depth, fx, fy, cx, cy, camera_position, camera_rotation):
+# def project_to_world(x, y, depth, fx, fy, cx, cy, camera_position, camera_rotation):
 
 
-    # Convert pixel coordinates to normalized image coordinates
-    Zc = depth
-    Xc = (x - cx) * Zc / fx
-    Yc = (y - cy) * Zc / fy  # Invert y coordinate
-    P_camera = np.array([Xc, Yc, Zc])
+#     # Convert pixel coordinates to normalized image coordinates
+#     Zc = depth
+#     Xc = (x - cx) * Zc / fx
+#     Yc = (y - cy) * Zc / fy  # Invert y coordinate
+#     P_camera = np.array([Xc, Yc, Zc])
 
-    # Get rotation matrix from quaternion
-    qx = camera_rotation['x']
-    qy = camera_rotation['y']
-    qz = camera_rotation['z']
-    qw = camera_rotation['w']
-    R = quaternion_to_rotation_matrix(qx, qy, qz, qw)
+#     # Get rotation matrix from quaternion
+#     qx = camera_rotation['x']
+#     qy = camera_rotation['y']
+#     qz = camera_rotation['z']
+#     qw = camera_rotation['w']
+#     R = quaternion_to_rotation_matrix(qx, qy, qz, qw)
 
-    T = np.array([camera_position['x'], camera_position['y'], camera_position['z']])
+#     T = np.array([camera_position['x'], camera_position['y'], camera_position['z']])
 
-    P_world = R @ P_camera + T  
+#     P_world = R @ P_camera + T  
 
-    return P_world
+#     return P_world
 
-def process_image(current_frame, depth_image, detection, rotation, position, fx, fy, cx, cy):
+
+def get_world_position_from_screen_space(x,y,depth, inv_mat, camera_pos,width,height):
+    
+    # Convert screen position to Normalized Device Coordinates (NDC)
+    ndc_x = (x - (width * 0.5)) / (width * 0.5)  # Range [-1, 1]
+    ndc_y = (y - (height * 0.5)) / (height * 0.5)  # Range [-1, 1]
+    
+    # Create a point in NDC space (using the near clip plane for z = -1)
+    near_clip_point = np.array([ndc_x, -ndc_y, -1.0, 1.0])  # 4D vector for NDC
+    
+    # Transform the NDC point to world space using the inverse matrix
+    world_near = np.dot(inv_mat, near_clip_point)
+    
+    # Perform perspective divide to convert from homogeneous coordinates to 3D coordinates
+    world_near_pos = world_near[:3] / world_near[3]
+    
+    # Calculate the ray direction by subtracting the camera's position from the world position
+    ray_direction = world_near_pos - camera_pos
+    
+    # Normalize the ray direction
+    ray_direction_normalized = ray_direction / np.linalg.norm(ray_direction)
+    
+    # Scale the ray direction by the provided depth value (world space depth)
+    world_position = camera_pos + ray_direction_normalized * depth
+
+    return world_position
+
+def process_image(current_frame, depth_image, detection, inv_mat, camera_pos):
     try:
         box = detection.get('box')
         if not box:
@@ -47,6 +74,8 @@ def process_image(current_frame, depth_image, detection, rotation, position, fx,
         x_center = (box_values[0] + box_values[2]) / 2.0
         y_center = (box_values[1] + box_values[3]) / 2.0
 
+        x_center = image_width - x_center  # Invert x coordinate
+
         # x_center = image_width - x_center  # Invert x coordinate
         # y_center = image_height - y_center  # Invert y coordinate
         cv2.circle(current_frame, (int(x_center), int(y_center)), 5, (0, 0, 255), -1)
@@ -57,24 +86,24 @@ def process_image(current_frame, depth_image, detection, rotation, position, fx,
         depth = np.mean(depth_image[box_values[1]:box_values[3], box_values[0]:box_values[2]])
 
         # Project the center point to world coordinates
-        center_world_position = project_to_world(x_center, y_center, depth, fx, fy, cx, cy, position, rotation)
+        center_wp = get_world_position_from_screen_space(x_center, y_center, depth, inv_mat, camera_pos, image_width, image_height)
 
         # Define the corner points
         box_p1 = (box_values[0], box_values[1])  # Top-left corner
         box_p2 = (box_values[2], box_values[3])  # Bottom-right corner
 
         # Project the corner points to world coordinates using the same depth
-        w_box_p1 = project_to_world(box_p1[0], box_p1[1], depth, fx, fy, cx, cy, position, rotation)
-        w_box_p2 = project_to_world(box_p2[0], box_p2[1], depth, fx, fy, cx, cy, position, rotation)
+        w_box_p1 = get_world_position_from_screen_space(box_p1[0], box_p1[1], depth, inv_mat, camera_pos, image_width, image_height)
+        w_box_p2 = get_world_position_from_screen_space(box_p2[0], box_p2[1], depth, inv_mat, camera_pos, image_width, image_height)
 
         # Calculate object dimensions
         object_width = np.linalg.norm(w_box_p1[[0, 2]] - w_box_p2[[0, 2]])  # Width in X-Z plane
         object_height = abs(w_box_p1[1] - w_box_p2[1])  # Height in Y-axis
 
         obj_data = {
-            'x': int(x_center),
-            'y': int(y_center),
-            'z': float(depth),
+            'x': float(center_wp[0]),
+            'y': float(center_wp[1]),
+            'z': float(center_wp[2]),
             'width': object_width,
             'height': object_height,
         }
