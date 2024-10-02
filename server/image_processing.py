@@ -198,10 +198,11 @@ def check_and_adjust_contrast(gui_back_color, text_color_rgb, target_ratio=4.5):
     Checks the contrast ratio between the background and text color. 
     Adjusts the text color's lightness and saturation, maintaining its hue. 
     If no suitable adjustment is found, adjusts the background color's lightness and saturation.
+    As a final step, the text color's hue is adjusted if no suitable contrast can be found.
 
     Parameters:
-    gui_back_color (tuple): The RGB color of the GUI background .
-    text_color_rgb (tuple): The BGR color of the text (R, G, B).
+    gui_back_color (tuple): The RGB color of the GUI background.
+    text_color_rgb (tuple): The RGB color of the text (R, G, B).
     target_ratio (float): Desired minimum contrast ratio, typically 4.5 or 7.0 for accessibility.
 
     Returns:
@@ -258,8 +259,22 @@ def check_and_adjust_contrast(gui_back_color, text_color_rgb, target_ratio=4.5):
             if new_contrast_ratio >= target_ratio:
                 return adjusted_back_color_rgb, text_color_rgb
 
-    # Step 3: If no suitable adjustment is found, return the final adjusted background and text colors
+    # Step 3: Adjust the text color's hue if no suitable lightness/saturation adjustment was found
+    for hue_adjustment in range(0, 361, 10):  # Adjust hue from 0 to 360 in steps of 10 degrees
+        adjusted_hue = (h_text + hue_adjustment / 360.0) % 1.0  # Hue is cyclical (wraps around)
+        adjusted_text_color_rgb = hsl_to_rgb(adjusted_hue, l_text, s_text)
+        rel_l_text_adjusted = relative_luminance(adjusted_text_color_rgb[0], adjusted_text_color_rgb[1], adjusted_text_color_rgb[2])
+
+        # Recalculate contrast with the adjusted hue
+        new_contrast_ratio = calculate_contrast(rel_l_background, rel_l_text_adjusted)
+
+        # If the new contrast ratio meets the requirement, return the original background and adjusted text color
+        if new_contrast_ratio >= target_ratio:
+            return gui_back_color, adjusted_text_color_rgb
+
+    # Step 4: If no suitable adjustment is found, return the original background and text colors
     return gui_back_color, text_color_rgb
+
 
 
 def calculate_background_colors(image, UIScreenCorners):
