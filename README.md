@@ -1,4 +1,3 @@
-
 # Project Setup Instructions
 
 ### Step 1: Install Miniforge
@@ -9,9 +8,11 @@ Install Miniforge from the following link:
 
 Miniforge provides a minimal conda installer for using the `conda-forge` package manager.
 
+
+
 ### Step 2: Create the Mamba Environment
 
-Once Miniforge is installed, create the environment using the provided `environment.yaml` file:
+Once Miniforge is installed, create the environment using the provided `environment.yaml` file (must be in the server directory)):
 
 ```
 mamba env create --file environment.yaml
