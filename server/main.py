@@ -16,11 +16,11 @@ import locks
 import asyncio
 from image_processing import process_image, calculate_background_colors
 
-#from transformers import pipeline
+from transformers import pipeline
 from PIL import Image
 
 from metric_depth.depth_anything_v2.dpt import DepthAnythingV2
-#import torch
+import torch
 
 def load_depth_model():
     model_configs = {
@@ -138,10 +138,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 objects_data = []
 
                 # Object detection using YOLO
-                #results = model.track(current_frame, verbose=False,persist=True)
+                results = model.track(current_frame, verbose=False,persist=True)
 
                 # Depth estimation using Depth anything
-                #depth_frame = depth_model.infer_image(image_np)
+                depth_frame = depth_model.infer_image(image_np)
                 
                 for detection in results:
                     if detection is not None:
@@ -198,7 +198,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             "b": gui_text_color[2]
                         }
                     },
-                    "objects": objects_data if objects_data else None  # List or None,
+                    "objects": objects_data if objects_data else None  # List or None
                 }
 
                 # Send the response back to the client
