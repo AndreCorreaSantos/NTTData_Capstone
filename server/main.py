@@ -22,7 +22,7 @@ from PIL import Image
 from metric_depth.depth_anything_v2.dpt import DepthAnythingV2
 #import torch
 
-""" def load_depth_model():
+def load_depth_model():
     model_configs = {
         'vits': {'encoder': 'vits', 'features': 64, 'out_channels': [48, 96, 192, 384]},
         'vitb': {'encoder': 'vitb', 'features': 128, 'out_channels': [96, 192, 384, 768]},
@@ -36,7 +36,7 @@ from metric_depth.depth_anything_v2.dpt import DepthAnythingV2
     model = DepthAnythingV2(**{**model_configs[encoder], 'max_depth': max_depth}).cuda()
     model.load_state_dict(torch.load(f'depth_anything_v2_metric_{dataset}_{encoder}.pth', map_location='cpu'))
     model.eval()
-    return model """
+    return model
 
 
 
@@ -45,9 +45,9 @@ from metric_depth.depth_anything_v2.dpt import DepthAnythingV2
 from datetime import datetime
 
 app = FastAPI()
-""" model = YOLO("yolov8n.pt")
+model = YOLO("yolov8n.pt")
 
-depth_model = load_depth_model() """
+depth_model = load_depth_model()
 
 now = datetime.now()
 
@@ -143,7 +143,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Depth estimation using Depth anything
                 #depth_frame = depth_model.infer_image(image_np)
                 
-                """ for detection in results:
+                for detection in results:
                     if detection is not None:
                         detection_json = detection.to_json()
                         result_json = json.loads(detection_json)
@@ -174,7 +174,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                         "id": obj_id,
                                         "width": obj_data['width'], 
                                         "height": obj_data['height']
-                                    }) """
+                                    })
                             
 
                 # Prepare the combined JSON message
@@ -219,12 +219,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 # depth_frame_normalized = np.uint8(depth_frame_normalized)
 
                 # Normalize depth frame for visualization
-                #depth_frame_normalized = cv2.normalize(depth_frame, None, 0, 255, cv2.NORM_MINMAX)
-                #depth_frame_normalized = np.uint8(depth_frame_normalized)
+                depth_frame_normalized = cv2.normalize(depth_frame, None, 0, 255, cv2.NORM_MINMAX)
+                depth_frame_normalized = np.uint8(depth_frame_normalized)
 
                 # Display the normalized depth image
-                #cv2.imshow("Depth Image", depth_frame_normalized)
-                #cv2.waitKey(1)
+                cv2.imshow("Depth Image", depth_frame_normalized)
+                cv2.waitKey(1)
 
     except Exception as e:
         print(traceback.format_exc())
