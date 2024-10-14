@@ -215,14 +215,14 @@ def calculate_background_colors(image, UIScreenCorners):
     exterior_roi = image[exterior_min_y:exterior_max_y, exterior_min_x:exterior_max_x]
 
     # Calculate the mean colors for the exterior ROI
-    exterior_mean_color_bgr = np.array(cv2.mean(exterior_roi)[:3])
+    exterior_roi_lab = cv2.cvtColor(exterior_roi[:3], cv2.COLOR_BGR2LAB)
 
-    # Reshape the mean color to create a valid image for cv2.cvtColor
-    exterior_mean_color_bgr = np.reshape(exterior_mean_color_bgr, (1, 1, 3)).astype(np.uint8)
+    # Calculate the mean color in LAB color space
+    mean_color_lab = np.array(cv2.mean(exterior_roi_lab)[:3])
 
-    # Convert the exterior mean color from BGR to LAB color space
-    mean_color_lab = cv2.cvtColor(exterior_mean_color_bgr, cv2.COLOR_BGR2LAB)
-    L, a, b = mean_color_lab[0, 0]
+    #print(f"Mean color LAB: {mean_color_lab}")
+
+    L, a, b = mean_color_lab
 
     # Scale L for further processing
     L_scaled = L * (100 / 255)
@@ -251,10 +251,15 @@ def calculate_background_colors(image, UIScreenCorners):
         int(new_color_bgr[0, 0, 0])   # B
     )
 
-    # Calculate a lighter color for text, based on white in LAB color space
-    white_color_rgb = LAB_to_RGB(100, 0, 0)  # Convert LAB white to RGB
-
-    gui_text_color = white_color_rgb  # Use the RGB values directly
+    """ if L_new > 50:
+        # Use a dark text color for light backgrounds
+        gui_text_color = (0, 0, 0)
+    else:
+        # Use a light text color for dark backgrounds
+        gui_text_color = (255, 255, 255) """ # Ficou estranho
+    
+    # Use a light text color for all backgrounds
+    gui_text_color = (255, 255, 255)
 
     # Return the calculated GUI background and text colors, along with the ROI
     return gui_back_color, gui_text_color, interior_roi
