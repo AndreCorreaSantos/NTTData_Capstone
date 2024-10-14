@@ -16,13 +16,13 @@ import locks
 import asyncio
 from image_processing import process_image, calculate_background_colors
 
-from transformers import pipeline
+#from transformers import pipeline
 from PIL import Image
 
 from metric_depth.depth_anything_v2.dpt import DepthAnythingV2
-import torch
+#import torch
 
-def load_depth_model():
+""" def load_depth_model():
     model_configs = {
         'vits': {'encoder': 'vits', 'features': 64, 'out_channels': [48, 96, 192, 384]},
         'vitb': {'encoder': 'vitb', 'features': 128, 'out_channels': [96, 192, 384, 768]},
@@ -36,7 +36,7 @@ def load_depth_model():
     model = DepthAnythingV2(**{**model_configs[encoder], 'max_depth': max_depth}).cuda()
     model.load_state_dict(torch.load(f'depth_anything_v2_metric_{dataset}_{encoder}.pth', map_location='cpu'))
     model.eval()
-    return model
+    return model """
 
 
 
@@ -45,9 +45,9 @@ def load_depth_model():
 from datetime import datetime
 
 app = FastAPI()
-model = YOLO("yolov8n.pt")
+""" model = YOLO("yolov8n.pt")
 
-depth_model = load_depth_model()
+depth_model = load_depth_model() """
 
 now = datetime.now()
 
@@ -95,6 +95,7 @@ async def websocket_endpoint(websocket: WebSocket):
             data_message = message.get('data')
             inv_mat_message = message.get('invMat')
             ui_screen_corners = message.get('UIScreenCorners')
+            flip_colors = message.get('flipColors')
 
             camera_position = np.array([data_message['x'], data_message['y'], data_message['z']])
             print("Camera Position: ", camera_position)
@@ -126,18 +127,23 @@ async def websocket_endpoint(websocket: WebSocket):
                 current_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
                 # Calculate GUI colors
-                gui_back_color, gui_text_color, interior_roi = calculate_background_colors(current_frame, ui_screen_corners)
+                gui_back_color, gui_text_color, interior_roi = (
+                    calculate_background_colors(
+                        current_frame,
+                        ui_screen_corners,
+                        flip_colors    
+                    ))
 
                 # Initialize list to hold positions of all detected persons
                 objects_data = []
 
                 # Object detection using YOLO
-                results = model.track(current_frame, verbose=False,persist=True)
+                #results = model.track(current_frame, verbose=False,persist=True)
 
                 # Depth estimation using Depth anything
-                depth_frame = depth_model.infer_image(image_np)
+                #depth_frame = depth_model.infer_image(image_np)
                 
-                for detection in results:
+                """ for detection in results:
                     if detection is not None:
                         detection_json = detection.to_json()
                         result_json = json.loads(detection_json)
@@ -168,7 +174,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                         "id": obj_id,
                                         "width": obj_data['width'], 
                                         "height": obj_data['height']
-                                    })
+                                    }) """
                             
 
                 # Prepare the combined JSON message
@@ -192,7 +198,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             "b": gui_text_color[2]
                         }
                     },
-                    "objects": objects_data if objects_data else None  # List or None
+                    "objects": objects_data if objects_data else None  # List or None,
                 }
 
                 # Send the response back to the client
@@ -213,12 +219,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 # depth_frame_normalized = np.uint8(depth_frame_normalized)
 
                 # Normalize depth frame for visualization
-                depth_frame_normalized = cv2.normalize(depth_frame, None, 0, 255, cv2.NORM_MINMAX)
-                depth_frame_normalized = np.uint8(depth_frame_normalized)
+                #depth_frame_normalized = cv2.normalize(depth_frame, None, 0, 255, cv2.NORM_MINMAX)
+                #depth_frame_normalized = np.uint8(depth_frame_normalized)
 
                 # Display the normalized depth image
-                cv2.imshow("Depth Image", depth_frame_normalized)
-                cv2.waitKey(1)
+                #cv2.imshow("Depth Image", depth_frame_normalized)
+                #cv2.waitKey(1)
 
     except Exception as e:
         print(traceback.format_exc())
