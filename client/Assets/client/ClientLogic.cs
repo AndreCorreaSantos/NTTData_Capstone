@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using System;
 
 
 public class ClientLogic : MonoBehaviour
@@ -22,8 +23,7 @@ public class ClientLogic : MonoBehaviour
     public TMP_Text dangerSource;
 
     private GameObject uiCanvasInstance;
-
-
+    private GameObject booleanToggle;
 
     private byte[] colorImageBytes;
     private byte[] depthImageBytes;
@@ -32,6 +32,7 @@ public class ClientLogic : MonoBehaviour
     private float sendInterval = 0.5f;
 
     private Vector3[] UIScreenCorners = new Vector3[4];
+    [SerializeField] private bool flipColors = false;
 
     public Dictionary<string, GameObject> anchors = new Dictionary<string, GameObject>();
 
@@ -337,7 +338,8 @@ public class ClientLogic : MonoBehaviour
             data = new ObjectData { x = pos.x, y = pos.y, z = pos.z, id = "Null", height = 0, width = 0 },
             invMat = invMat,
             imageData = System.Convert.ToBase64String(imageBytes),
-            UIScreenCorners = UIScreenCorners
+            UIScreenCorners = UIScreenCorners,
+            flipColors = flipColors,
         };
 
         string jsonString = JsonUtility.ToJson(dataObject);
@@ -354,6 +356,11 @@ public class ClientLogic : MonoBehaviour
             Vector3 initialPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
 
             uiCanvasInstance = Instantiate(UICanvas, initialPosition, Quaternion.identity);
+            booleanToggle = uiCanvasInstance.transform.GetChild(1).GetChild(0).GetChild(3).GetChild(0).GetChild(0).GetChild(3).GetChild(1).GetChild(0).gameObject;
+            booleanToggle.GetComponent<Toggle>().onValueChanged.AddListener(delegate {
+                FlipColors();
+            });
+            
 
             // Make the UI face the player
             uiCanvasInstance.transform.rotation = Quaternion.LookRotation(uiCanvasInstance.transform.position - playerCamera.transform.position);
@@ -414,6 +421,10 @@ public class ClientLogic : MonoBehaviour
         uiObstructedCount = Mathf.Max(0, uiObstructedCount - 1);
     }
 
+    public void FlipColors(){
+        flipColors = !flipColors;
+    }
+
     // Serializable classes for JSON deserialization
 
     [System.Serializable]
@@ -466,11 +477,11 @@ public class ClientLogic : MonoBehaviour
         public ObjectData data;
         public Matrix4x4 invMat;
         public string imageData;
-
         public float fx;
         public float fy;
         public float cx;
         public float cy;
         public Vector3[] UIScreenCorners;
+        public bool flipColors;
     }
 }

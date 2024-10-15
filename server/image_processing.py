@@ -156,7 +156,35 @@ def LAB_to_RGB(L, a, b):
 
     return int(r), int(g), int(b)
 
-def calculate_background_colors(image, UIScreenCorners):
+def adjust_colors(a, b, flip_colors=False):
+    """
+    Adjust the colors by scaling and flipping if specified.
+
+    Parameters:
+    - a (numpy.ndarray): The first color channel.
+    - b (numpy.ndarray): The second color channel.
+    - flip_colors (bool): Whether to flip the colors.
+
+    Returns:
+    - Tuple[numpy.ndarray, numpy.ndarray]: Adjusted color channels a and b.
+    """
+    # Scale the input color channels by subtracting 128
+    a_scaled = a - 128
+    b_scaled = b - 128
+
+    if flip_colors:
+        # Flip the colors by negating the scaled values
+        a_scaled = -a_scaled
+        b_scaled = -b_scaled
+
+    # Return adjusted values by adding 128 back to the scaled channels
+    return a_scaled + 128, b_scaled + 128
+
+# Example usage
+# a, b = adjust_colors(a, b, flip_colors=True)
+
+
+def calculate_background_colors(image, UIScreenCorners,flip_colors):
     """
     Calculate the background and text colors for a graphical user interface (GUI) based on the specified corners of the screen.
 
@@ -169,6 +197,7 @@ def calculate_background_colors(image, UIScreenCorners):
     - gui_text_color: A tuple representing the calculated text color in BGR format.
     - exterior_roi: A NumPy array representing the external region of interest around the screen corners.
     """
+
     image = cv2.flip(image, -1)
     # Extract the coordinates of the screen corners
     UIScreenCorners = [
@@ -238,6 +267,9 @@ def calculate_background_colors(image, UIScreenCorners):
     # Scale the adjusted L back to the range suitable for LAB
     L_new_scaled = L_new * (255 / 100)
 
+    # Flip the colors if specified
+    a, b = adjust_colors(a, b, flip_colors=flip_colors)
+
     # Create a new LAB color using the adjusted lightness
     new_color_lab = np.uint8([[[L_new_scaled, a, b]]])
 
@@ -263,3 +295,4 @@ def calculate_background_colors(image, UIScreenCorners):
 
     # Return the calculated GUI background and text colors, along with the ROI
     return gui_back_color, gui_text_color, interior_roi
+

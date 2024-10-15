@@ -95,6 +95,7 @@ async def websocket_endpoint(websocket: WebSocket):
             data_message = message.get('data')
             inv_mat_message = message.get('invMat')
             ui_screen_corners = message.get('UIScreenCorners')
+            flip_colors = message.get('flipColors')
 
             camera_position = np.array([data_message['x'], data_message['y'], data_message['z']])
             print("Camera Position: ", camera_position)
@@ -126,7 +127,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 current_frame = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
                 # Calculate GUI colors
-                gui_back_color, gui_text_color, interior_roi = calculate_background_colors(current_frame, ui_screen_corners)
+                gui_back_color, gui_text_color, interior_roi = (
+                    calculate_background_colors(
+                        current_frame,
+                        ui_screen_corners,
+                        flip_colors    
+                    ))
 
                 # Initialize list to hold positions of all detected persons
                 objects_data = []
