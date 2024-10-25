@@ -72,7 +72,7 @@ public class ClientLogic : MonoBehaviour
                 UIscreenCorner.x /= Screen.width;
                 UIscreenCorner.y /= Screen.height;
                 UIScreenCorners[i] = UIscreenCorner;
-                Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
+                //Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
             }
 
             Texture2D colorTexture = ConvertToTexture2D(colorImage.texture);
@@ -356,7 +356,13 @@ public class ClientLogic : MonoBehaviour
             Vector3 initialPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
 
             uiCanvasInstance = Instantiate(UICanvas, initialPosition, Quaternion.identity);
-            booleanToggle = uiCanvasInstance.transform.GetChild(1).GetChild(0).GetChild(3).GetChild(0).GetChild(0).GetChild(3).GetChild(1).GetChild(0).gameObject;
+            if (uiCanvasInstance == null)
+            {
+                Debug.LogError("Failed to instantiate UI Canvas.");
+                return;
+            }
+            /* booleanToggle = uiCanvasInstance.transform.GetChild(1).GetChild(0).GetChild(3).GetChild(0).GetChild(0).GetChild(4).GetChild(1).GetChild(0).gameObject; */
+            booleanToggle = GameObject.FindWithTag("BooleanToggleTag");
             booleanToggle.GetComponent<Toggle>().onValueChanged.AddListener(delegate {
                 FlipColors();
             });
