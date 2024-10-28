@@ -191,7 +191,7 @@ public class Anchor : MonoBehaviour
 
     IEnumerator SelfDestroy()
     {
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(4);
 
         // Ensure the UI is reset when this anchor is destroyed
 
@@ -201,7 +201,7 @@ public class Anchor : MonoBehaviour
         {
             Destroy(lineInstance);
         }
-        yield return new WaitForSeconds(1.0f);
+        yield return new WaitForSeconds(1.5f);
         Destroy(gameObject);
         if (isUICurrentlyMoved)
         {

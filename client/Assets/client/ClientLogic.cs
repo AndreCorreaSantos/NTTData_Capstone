@@ -95,32 +95,55 @@ public class ClientLogic : MonoBehaviour
         UpdateUIRotation();
     }
 
+    private Vector3 GetAvgAnchorPos()
+    {
+        Vector3 avgAnchorPos = Vector3.zero;
+        foreach (var anchor in anchors.Values)
+        {
+            avgAnchorPos += anchor.transform.position;
+        }
+        avgAnchorPos /= anchors.Count;
+        return avgAnchorPos;
+    }
     private void UpdateUIPosition()
     {
         if (uiCanvasInstance != null && playerCamera != null)
-        {
-            // Desired position in front of the player
-            float distanceFromPlayer = 2.0f; // Adjust this value as needed
-            Vector3 forwardDirection = playerCamera.transform.forward;
-            Vector3 desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
+            {
+                // Desired position in front of the player
+                float distanceFromPlayer = 2.0f; // Adjust this value as needed
+                Vector3 forwardDirection = playerCamera.transform.forward;
+                Vector3 desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
 
-            // Adjust vertical position using SmoothDamp
-            float targetVerticalOffset = uiObstructedCount > 0 ? uiMoveAmount : 0f;
-            float smoothTime = uiMoveDuration;
+                float smoothTime = uiMoveDuration;
 
-            uiVerticalOffset = Mathf.SmoothDamp(uiVerticalOffset, targetVerticalOffset, ref uiVerticalOffsetVelocity, smoothTime);
+                // Calculate direction to the canvas
+                Vector3 dirToCanvas = playerCamera.transform.position - uiCanvasInstance.transform.position;
+                dirToCanvas.y = 0;
+                dirToCanvas.Normalize();
 
-            // Apply vertical offset
-            desiredPosition.y += uiVerticalOffset;
+                // Average anchor position direction
+                Vector3 avgAnchorPos = GetAvgAnchorPos();
+                Vector3 dirToAvgAnchor = playerCamera.transform.position - avgAnchorPos;
+                dirToAvgAnchor.y = 0;
+                dirToAvgAnchor.Normalize();
 
-            // Smoothly move the UI towards the desired position
-            float positionLerpSpeed = uiFollowSpeed * Time.deltaTime;
-            uiCanvasInstance.transform.position = Vector3.Lerp(
-                uiCanvasInstance.transform.position,
-                desiredPosition,
-                positionLerpSpeed
-            );
-        }
+                // Cross product to determine rotation direction
+                Vector3 cross = -Vector3.Cross(dirToCanvas, dirToAvgAnchor);
+             
+                // Adjust desired position by rotating it around the player
+                float rotationSpeed = 10.0f; // Adjust rotation speed if needed
+                if(uiObstructedCount > 0)
+                {
+                    desiredPosition = Quaternion.AngleAxis(rotationSpeed, cross) * (desiredPosition - playerCamera.transform.position) + playerCamera.transform.position;
+                }
+                // Smoothly move the UI towards the adjusted desired position
+                float positionLerpSpeed = uiFollowSpeed * Time.deltaTime;
+                uiCanvasInstance.transform.position = Vector3.Lerp(
+                    uiCanvasInstance.transform.position,
+                    desiredPosition,
+                    positionLerpSpeed
+                );
+            }
     }
 
     private void UpdateUIRotation()
