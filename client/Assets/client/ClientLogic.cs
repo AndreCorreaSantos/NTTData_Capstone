@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using System;
+// using UnityEngine.UIElements;
 
 
 public class ClientLogic : MonoBehaviour
@@ -36,6 +37,8 @@ public class ClientLogic : MonoBehaviour
 
     public Dictionary<string, GameObject> anchors = new Dictionary<string, GameObject>();
 
+    public GameObject debugobj;
+
     // Variables for smooth UI movement
     public float uiFollowSpeed = 5f; // Adjust this value to control follow speed
 
@@ -44,12 +47,18 @@ public class ClientLogic : MonoBehaviour
     private float uiVerticalOffsetVelocity = 0f;
     public float uiMoveAmount = 1.0f; // Distance to move the UI when obstructed
     public float uiMoveDuration = 0.5f; // Time to move the UI when obstructed
-    private int uiObstructedCount = 0;
+    public List<string> uiObstructedObjectsMain = new List<string>();
+    public List<string> uiObstructedObjectsSide = new List<string>();
 
     public GameObject redDot;
 
+    private float cumulativeRotationAngle = 0f; // Current cumulative rotation angle in degrees
+    public float maxRotationAngle = 90f;        // Maximum rotation angle to prevent over-rotation
+
+
     void Start()
     {
+        debugobj = Instantiate(redDot, new Vector3(0, 0, 0), Quaternion.identity);
         StartWebSocket();
         SpawnUI();
         connection.OnServerMessage += HandleServerMessage;
@@ -105,45 +114,103 @@ public class ClientLogic : MonoBehaviour
         avgAnchorPos /= anchors.Count;
         return avgAnchorPos;
     }
+
+    private Vector3 RotateAroundPoint(Vector3 point, Vector3 pivot, Quaternion rotation)
+    {
+        return rotation * (point - pivot) + pivot;
+    }
     private void UpdateUIPosition()
     {
         if (uiCanvasInstance != null && playerCamera != null)
+        {
+            // Desired position directly in front of the player
+            float distanceFromPlayer = 2.0f; // Adjust this value as needed
+            Vector3 forwardDirection = playerCamera.transform.forward;
+            Vector3 baseDesiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
+
+            Vector3 desiredPosition = baseDesiredPosition;
+
+            // Direction from player to current UI position
+            Vector3 dirToCanvas = uiCanvasInstance.transform.position - playerCamera.transform.position;
+            dirToCanvas.y = 0;
+            dirToCanvas.Normalize();
+
+            // Direction from player to average anchor position
+            Vector3 avgAnchorPos = GetAvgAnchorPos();
+            Vector3 dirToAvgAnchor = avgAnchorPos - playerCamera.transform.position;
+            dirToAvgAnchor.y = 0;
+            dirToAvgAnchor.Normalize();
+
+            // Cross product to determine rotation direction
+            Vector3 cross = Vector3.Cross(dirToCanvas, dirToAvgAnchor);
+
+            // Determine rotation direction based on cross product
+            float rotationDirection = cross.y > 0 ? -1f : 1f;
+
+            // Adjust desired position by rotating it around the player
+            float rotationSpeed = 5.0f; // Degrees per second, adjust as needed
+
+            if (uiObstructedObjectsMain.Count > 0)
             {
-                // Desired position in front of the player
-                float distanceFromPlayer = 2.0f; // Adjust this value as needed
-                Vector3 forwardDirection = playerCamera.transform.forward;
-                Vector3 desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
+                // Increase cumulative rotation angle over time
+                cumulativeRotationAngle += rotationSpeed * Time.deltaTime;
 
-                float smoothTime = uiMoveDuration;
+                // Limit the cumulative rotation angle to the maximum allowed
+                cumulativeRotationAngle = Mathf.Min(cumulativeRotationAngle, maxRotationAngle);
 
-                // Calculate direction to the canvas
-                Vector3 dirToCanvas = playerCamera.transform.position - uiCanvasInstance.transform.position;
-                dirToCanvas.y = 0;
-                dirToCanvas.Normalize();
+                // Calculate the total rotation angle with direction
+                float totalRotationAngle = cumulativeRotationAngle * rotationDirection;
 
-                // Average anchor position direction
-                Vector3 avgAnchorPos = GetAvgAnchorPos();
-                Vector3 dirToAvgAnchor = playerCamera.transform.position - avgAnchorPos;
-                dirToAvgAnchor.y = 0;
-                dirToAvgAnchor.Normalize();
-
-                // Cross product to determine rotation direction
-                Vector3 cross = -Vector3.Cross(dirToCanvas, dirToAvgAnchor);
-             
-                // Adjust desired position by rotating it around the player
-                float rotationSpeed = 10.0f; // Adjust rotation speed if needed
-                if(uiObstructedCount > 0)
-                {
-                    desiredPosition = Quaternion.AngleAxis(rotationSpeed, cross) * (desiredPosition - playerCamera.transform.position) + playerCamera.transform.position;
-                }
-                // Smoothly move the UI towards the adjusted desired position
-                float positionLerpSpeed = uiFollowSpeed * Time.deltaTime;
-                uiCanvasInstance.transform.position = Vector3.Lerp(
-                    uiCanvasInstance.transform.position,
-                    desiredPosition,
-                    positionLerpSpeed
+                // Rotate the desired position around the player's position
+                desiredPosition = RotateAroundPoint(
+                    baseDesiredPosition,
+                    playerCamera.transform.position,
+                    Quaternion.Euler(0, totalRotationAngle, 0)
                 );
+
+                Debug.Log($"Obstructed: Rotating UI by cumulative angle {cumulativeRotationAngle} degrees");
             }
+            else if (uiObstructedObjectsSide.Count > 0)
+            {
+                // If only side colliders are hit, keep the UI in its current rotated position
+                desiredPosition = uiCanvasInstance.transform.position; // Stay in current position
+                Debug.Log("Side obstruction detected, maintaining current position.");
+            }
+            else
+            {
+                // Decrease cumulative rotation angle to return UI to the front
+                cumulativeRotationAngle -= rotationSpeed * Time.deltaTime;
+
+                // Ensure cumulative rotation angle doesn't go below zero
+                cumulativeRotationAngle = Mathf.Max(cumulativeRotationAngle, 0f);
+
+                // Calculate the total rotation angle with direction
+                float totalRotationAngle = cumulativeRotationAngle * rotationDirection;
+
+                // Rotate the desired position back towards the front
+                desiredPosition = RotateAroundPoint(
+                    baseDesiredPosition,
+                    playerCamera.transform.position,
+                    Quaternion.Euler(0, totalRotationAngle, 0)
+                );
+
+                Debug.Log("UI obstruction cleared, returning UI to original position");
+            }
+
+            // Smoothly move the UI towards the adjusted desired position
+            float positionLerpSpeed = uiFollowSpeed * Time.deltaTime;
+            uiCanvasInstance.transform.position = Vector3.Lerp(
+                uiCanvasInstance.transform.position,
+                desiredPosition,
+                positionLerpSpeed
+            );
+
+            // Optionally, make the UI face the player if desired
+            // Uncomment if you want the UI to always face the player
+            // uiCanvasInstance.transform.LookAt(playerCamera.transform.position);
+
+            Debug.Log($"UI Position updated: {uiCanvasInstance.transform.position}");
+        }
     }
 
     private void UpdateUIRotation()
@@ -434,15 +501,15 @@ public class ClientLogic : MonoBehaviour
 
     // Methods to move the UI out of the way when obstructed by anchor raycasts
 
-    public void MoveUIOutOfWay()
-    {
-        uiObstructedCount++;
-    }
+    // public void MoveUIOutOfWay()
+    // {
+    //     uiObstructedCount++;
+    // }
 
-    public void ReturnUIToOriginalPosition()
-    {
-        uiObstructedCount = Mathf.Max(0, uiObstructedCount - 1);
-    }
+    // public void ReturnUIToOriginalPosition()
+    // {
+    //     uiObstructedCount = Mathf.Max(0, uiObstructedCount - 1);
+    // }
 
     public void FlipColors(){
         flipColors = !flipColors;

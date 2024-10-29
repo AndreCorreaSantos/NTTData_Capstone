@@ -151,24 +151,35 @@ public class Anchor : MonoBehaviour
 
     private void HandleUIHit(bool mainColliderHit, bool sideColliderHit)
     {
-        if ((mainColliderHit || sideColliderHit) && !isUICurrentlyMoved)
+        if (mainColliderHit)
         {
-            // Move the UI out of the way if it's not already moved
-            isUICurrentlyMoved = true;
             if (client != null)
             {
-                client.MoveUIOutOfWay();
+                client.uiObstructedObjectsMain.Add(this.id);
             }
         }
-        else if (!mainColliderHit && !sideColliderHit && isUICurrentlyMoved)
+        else if (sideColliderHit)
         {
-            // Return the UI to its original position if no colliders are hit
-            isUICurrentlyMoved = false;
             if (client != null)
             {
-                client.ReturnUIToOriginalPosition();
+                client.uiObstructedObjectsSide.Add(this.id);
             }
         }
+        else
+        {
+            if (client != null)
+            {
+                client.uiObstructedObjectsMain.Remove(this.id);
+                client.uiObstructedObjectsSide.Remove(this.id);
+            }
+        }
+        // else if (!mainColliderHit && !sideColliderHit)
+        // {
+        //     if (client != null)
+        //     {
+        //         client.ui
+        //     }
+        // }
         // If the UI is already moved and any collider is hit, do nothing (keep it moved)
     }
 
@@ -212,12 +223,18 @@ public class Anchor : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (isUICurrentlyMoved)
+        // if (isUICurrentlyMoved)
+        // {
+        //     if (client != null)
+        //     {
+        //         client.ReturnUIToOriginalPosition();
+        //     }
+        // }
+
+        if (client != null)
         {
-            if (client != null)
-            {
-                client.ReturnUIToOriginalPosition();
-            }
+            client.uiObstructedObjectsMain.Remove(this.id);
+            client.uiObstructedObjectsSide.Remove(this.id);
         }
     }
 }
