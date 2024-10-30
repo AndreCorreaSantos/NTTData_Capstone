@@ -817,7 +817,10 @@ MonoBehaviour:
   uiFollowSpeed: 5
   uiMoveAmount: 1
   uiMoveDuration: 0.5
+  uiObstructedObjectsMain: []
+  uiObstructedObjectsSide: []
   redDot: {fileID: 8013747680800323292, guid: 29cc46f8369023349b2535d44f7a1ae9, type: 3}
+  maxRotationAngle: 90
 --- !u!114 &700190882
 MonoBehaviour:
   m_ObjectHideFlags: 0

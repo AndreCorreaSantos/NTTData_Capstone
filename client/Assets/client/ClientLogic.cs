@@ -5,8 +5,40 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using System;
+using UnityEngine.XR.ARFoundation.Samples;
+using UnityEditor.Experimental.GraphView;
+// using UnityEngine.UIElements;
 // using UnityEngine.UIElements;
 
+public enum State
+{
+    NotBlocked,
+    Rotating,
+    Suspended,
+    AdjustToPlayerView
+}
+
+public class GUIMovementStateMachine
+{
+    private State currentState;
+    public float desiredMotionVal;
+
+    public GUIMovementStateMachine()
+    {
+        currentState = State.NotBlocked; // Initial state
+        desiredMotionVal = 0;
+    }
+
+    public void TransitionTo(State newState)
+    {
+        currentState = newState;
+    }
+
+    public State GetCurrentState()
+    {
+        return currentState;
+    }
+}
 
 public class ClientLogic : MonoBehaviour
 {
@@ -55,15 +87,19 @@ public class ClientLogic : MonoBehaviour
     private float cumulativeRotationAngle = 0f; // Current cumulative rotation angle in degrees
     public float maxRotationAngle = 90f;        // Maximum rotation angle to prevent over-rotation
 
+    private GUIMovementStateMachine guiMovementStateMachine;
+
 
     void Start()
     {
+        guiMovementStateMachine = new GUIMovementStateMachine();
         debugobj = Instantiate(redDot, new Vector3(0, 0, 0), Quaternion.identity);
         StartWebSocket();
         SpawnUI();
         connection.OnServerMessage += HandleServerMessage;
         // redDot = Instantiate(redDot, new Vector3(0, 0, 0), Quaternion.identity);
     }
+
 
     void Update()
     {
@@ -123,6 +159,7 @@ public class ClientLogic : MonoBehaviour
     {
         if (uiCanvasInstance != null && playerCamera != null)
         {
+            Debug.Log(guiMovementStateMachine.GetCurrentState());
             // Desired position directly in front of the player
             float distanceFromPlayer = 2.0f; // Adjust this value as needed
             Vector3 forwardDirection = playerCamera.transform.forward;
@@ -150,34 +187,99 @@ public class ClientLogic : MonoBehaviour
             // Adjust desired position by rotating it around the player
             float rotationSpeed = 5.0f; // Degrees per second, adjust as needed
 
-            if (uiObstructedObjectsMain.Count > 0)
+            //calculate angle in 2D XZ plane between camera and object
+            Vector3 CameraPosition = new Vector3(playerCamera.transform.position.x, playerCamera.transform.position.y, playerCamera.transform.position.z);
+            Vector3 CameraDirection = new Vector3(playerCamera.transform.forward.x, 0, playerCamera.transform.forward.z);
+            Vector3 dirToCanvasNoY = new Vector3(dirToCanvas.x, 0, dirToCanvas.z);
+
+            float angleInDegrees = Vector3.Angle(CameraDirection, dirToCanvas);
+            print(angleInDegrees);
+
+
+            if (guiMovementStateMachine.GetCurrentState() == State.AdjustToPlayerView)
             {
-                // Increase cumulative rotation angle over time
-                cumulativeRotationAngle += rotationSpeed * Time.deltaTime;
+                Debug.Log("A");
+                desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
+                Debug.Log(angleInDegrees);
+                if (angleInDegrees < 5f)
+                {
+                    guiMovementStateMachine.TransitionTo(State.NotBlocked);
+                }
 
-                // Limit the cumulative rotation angle to the maximum allowed
-                cumulativeRotationAngle = Mathf.Min(cumulativeRotationAngle, maxRotationAngle);
+            }
+            else if (uiObstructedObjectsMain.Count > 0)
+            {
+                Debug.Log("B");
 
-                // Calculate the total rotation angle with direction
-                float totalRotationAngle = cumulativeRotationAngle * rotationDirection;
+                //CREATE A STATE MACHINE TO MAKE THIS BS CLEARER
 
-                // Rotate the desired position around the player's position
-                desiredPosition = RotateAroundPoint(
-                    baseDesiredPosition,
-                    playerCamera.transform.position,
-                    Quaternion.Euler(0, totalRotationAngle, 0)
-                );
+                Debug.Log(angleInDegrees);
+                if (angleInDegrees < 40f)
+                {
+                    guiMovementStateMachine.TransitionTo(State.Rotating);
+                    // Increase cumulative rotation angle over time
+                    cumulativeRotationAngle += rotationSpeed * Time.deltaTime;
 
-                Debug.Log($"Obstructed: Rotating UI by cumulative angle {cumulativeRotationAngle} degrees");
+                    // Limit the cumulative rotation angle to the maximum allowed
+                    cumulativeRotationAngle = Mathf.Min(cumulativeRotationAngle, maxRotationAngle);
+
+                    // Calculate the total rotation angle with direction
+                    float totalRotationAngle = cumulativeRotationAngle * rotationDirection;
+
+                    // Rotate the desired position around the player's position
+                    desiredPosition = RotateAroundPoint(
+                        baseDesiredPosition,
+                        playerCamera.transform.position,
+                        Quaternion.Euler(0, totalRotationAngle, 0)
+                    );
+                    //Debug.Log($"Obstructed: Rotating UI by cumulative angle {cumulativeRotationAngle} degrees");
+                }
+                else if (angleInDegrees > 45f && angleInDegrees <= 65f)
+                {
+                    cumulativeRotationAngle = 0;
+                    guiMovementStateMachine.TransitionTo(State.Suspended);
+
+                    float targetVerticalOffset = 1f;
+                    float smoothTime = uiMoveDuration;
+                    uiVerticalOffset = Mathf.SmoothDamp(uiVerticalOffset, targetVerticalOffset, ref uiVerticalOffsetVelocity, smoothTime);
+
+                    // Apply vertical offset
+                    desiredPosition = uiCanvasInstance.transform.position;
+                    desiredPosition.y = playerCamera.transform.position.y + 1;
+
+                }
+                else
+                {
+                    guiMovementStateMachine.TransitionTo(State.AdjustToPlayerView);
+                }
+
             }
             else if (uiObstructedObjectsSide.Count > 0)
             {
-                // If only side colliders are hit, keep the UI in its current rotated position
-                desiredPosition = uiCanvasInstance.transform.position; // Stay in current position
-                Debug.Log("Side obstruction detected, maintaining current position.");
+                Debug.Log("C");
+
+                //calculate angle in 2D XZ plane between camera and object
+                //check if held outside of camera
+
+                // Rotate the desired position around the player's position
+                cumulativeRotationAngle = 0;
+                desiredPosition = uiCanvasInstance.transform.position;
+
+                if (angleInDegrees > 45f && angleInDegrees <= 65f)
+                {
+                    guiMovementStateMachine.TransitionTo(State.Suspended);
+                    desiredPosition = uiCanvasInstance.transform.position;
+                    desiredPosition.y = playerCamera.transform.position.y + 1;
+                }
+                if (angleInDegrees > 65f)
+                {
+                    guiMovementStateMachine.TransitionTo(State.AdjustToPlayerView);
+                }
             }
             else
             {
+                Debug.Log("D");
+                /*
                 // Decrease cumulative rotation angle to return UI to the front
                 cumulativeRotationAngle -= rotationSpeed * Time.deltaTime;
 
@@ -194,7 +296,9 @@ public class ClientLogic : MonoBehaviour
                     Quaternion.Euler(0, totalRotationAngle, 0)
                 );
 
-                Debug.Log("UI obstruction cleared, returning UI to original position");
+                Debug.Log("UI obstruction cleared, returning UI to original position");*/
+                cumulativeRotationAngle = 0;
+                desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
             }
 
             // Smoothly move the UI towards the adjusted desired position
@@ -340,7 +444,7 @@ public class ClientLogic : MonoBehaviour
 
     //     // Transform the NDC point to world space using the inverse matrix
     //     Vector4 worldNear = invMat * nearClipPoint;
-        
+
     //     // Perform perspective divide to convert the Vector4 to Vector3
     //     Vector3 worldNearPos = new Vector3(worldNear.x / worldNear.w, worldNear.y / worldNear.w, worldNear.z / worldNear.w);
 
@@ -447,10 +551,11 @@ public class ClientLogic : MonoBehaviour
 
             uiCanvasInstance = Instantiate(UICanvas, initialPosition, Quaternion.identity);
             booleanToggle = uiCanvasInstance.transform.GetChild(1).GetChild(0).GetChild(3).GetChild(0).GetChild(0).GetChild(3).GetChild(1).GetChild(0).gameObject;
-            booleanToggle.GetComponent<Toggle>().onValueChanged.AddListener(delegate {
+            booleanToggle.GetComponent<Toggle>().onValueChanged.AddListener(delegate
+            {
                 FlipColors();
             });
-            
+
 
             // Make the UI face the player
             uiCanvasInstance.transform.rotation = Quaternion.LookRotation(uiCanvasInstance.transform.position - playerCamera.transform.position);
@@ -511,7 +616,8 @@ public class ClientLogic : MonoBehaviour
     //     uiObstructedCount = Mathf.Max(0, uiObstructedCount - 1);
     // }
 
-    public void FlipColors(){
+    public void FlipColors()
+    {
         flipColors = !flipColors;
     }
 
