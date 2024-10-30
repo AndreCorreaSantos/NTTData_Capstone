@@ -229,7 +229,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 366.6, y: 86.1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4244810253331850255
 CanvasRenderer:
@@ -286,10 +286,10 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 69.45
+  m_fontSizeBase: 0
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
@@ -343,11 +343,29 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   stringList:
-  - Text A
-  - Text B
-  - Text C
-  - Text D
-  - Text E
+  - "Se voc\xEA est\xE1 de frente para o norte e vira 90 graus \xE0 direita, para
+    que dire\xE7\xE3o estar\xE1 virado?"
+  - "Qual \xE9 a metade de 20?"
+  - "Se voc\xEA est\xE1 no terceiro andar e desce dois andares, em qual andar ficar\xE1?"
+  - "Qual \xE9 o dobro de 15?"
+  - "Qual \xE9 o triplo de 6?"
+  - "Se voc\xEA come tr\xEAs peda\xE7os de uma pizza de oito peda\xE7os, quantos
+    peda\xE7os ainda restam?"
+  - "Se voc\xEA est\xE1 de frente para o norte e vira 180 graus, para que dire\xE7\xE3o
+    estar\xE1 virado?"
+  - "Quanto \xE9 12 - 7?"
+  - "Se voc\xEA est\xE1 no terceiro andar e sobe dois andares, em qual andar ficar\xE1?"
+  - "Qual \xE9 o dobro de 20?"
+  - "Se voc\xEA come dois peda\xE7os de uma pizza de oito peda\xE7os, quantos peda\xE7os
+    ainda restam?"
+  - "Quanto \xE9 17 - 7?"
+  - "Se voc\xEA v\xEA uma fila de cinco pessoas e duas saem, quantas pessoas ficam
+    na fila?"
+  - "Qual \xE9 o triplo de 11?"
+  - "Qual \xE9 a metade de 30?"
+  - "Se voc\xEA est\xE1 de frente para o norte e vira 360 graus, para que dire\xE7\xE3o
+    estar\xE1 virado?"
+  - "Qual \xE9 o triplo de 11?"
   index: 0
   textMeshPro: {fileID: 0}
 --- !u!1 &1596203705848177105
@@ -565,6 +583,50 @@ MonoBehaviour:
   - {fileID: 658939534098390016}
   - {fileID: 1875019871283003298}
   - {fileID: 6708442922483791266}
+  - {fileID: 7337745171491464670}
+  - {fileID: 1850620624703875915}
+  - {fileID: 1850620624260750863}
+  - {fileID: 5469567813417433979}
+  - {fileID: 5099309761040258948}
+  - {fileID: 5516806859330790832}
+  - {fileID: 658939534346918484}
+  - {fileID: 658939534098390016}
+  - {fileID: 1875019871283003298}
+  - {fileID: 6708442922483791266}
+  - {fileID: 493726861087397514}
+  - {fileID: 7337745171491464670}
+  - {fileID: 1850620624703875915}
+  - {fileID: 1850620624260750863}
+  - {fileID: 5469567813417433979}
+  - {fileID: 5099309761040258948}
+  - {fileID: 5516806859330790832}
+  - {fileID: 658939534346918484}
+  - {fileID: 658939534098390016}
+  - {fileID: 1875019871283003298}
+  - {fileID: 6708442922483791266}
+  - {fileID: 493726861087397514}
+  - {fileID: 7337745171491464670}
+  - {fileID: 1850620624703875915}
+  - {fileID: 1850620624260750863}
+  - {fileID: 5469567813417433979}
+  - {fileID: 5099309761040258948}
+  - {fileID: 5516806859330790832}
+  - {fileID: 658939534346918484}
+  - {fileID: 658939534098390016}
+  - {fileID: 1875019871283003298}
+  - {fileID: 6708442922483791266}
+  - {fileID: 493726861087397514}
+  - {fileID: 7337745171491464670}
+  - {fileID: 1850620624703875915}
+  - {fileID: 1850620624260750863}
+  - {fileID: 5469567813417433979}
+  - {fileID: 5099309761040258948}
+  - {fileID: 5516806859330790832}
+  - {fileID: 658939534346918484}
+  - {fileID: 658939534098390016}
+  - {fileID: 1875019871283003298}
+  - {fileID: 6708442922483791266}
+  - {fileID: 493726861087397514}
   - {fileID: 7337745171491464670}
   - {fileID: 1850620624703875915}
   - {fileID: 1850620624260750863}
@@ -2367,7 +2429,17 @@ PrefabInstance:
     - target: {fileID: 6947645377989888847, guid: 085ce58b196caa446a8545c9dd388793,
         type: 3}
       propertyPath: m_Spacing
-      value: 20
+      value: 44
+      objectReference: {fileID: 0}
+    - target: {fileID: 6947645377989888847, guid: 085ce58b196caa446a8545c9dd388793,
+        type: 3}
+      propertyPath: m_ChildAlignment
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6947645377989888847, guid: 085ce58b196caa446a8545c9dd388793,
+        type: 3}
+      propertyPath: m_ChildControlWidth
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7035808934497996602, guid: 085ce58b196caa446a8545c9dd388793,
         type: 3}
@@ -2516,8 +2588,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8598023550569248621, guid: 085ce58b196caa446a8545c9dd388793,
         type: 3}
+      propertyPath: m_Size
+      value: 0.9875776
+      objectReference: {fileID: 0}
+    - target: {fileID: 8598023550569248621, guid: 085ce58b196caa446a8545c9dd388793,
+        type: 3}
       propertyPath: m_Value
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8700705189028984076, guid: 085ce58b196caa446a8545c9dd388793,
         type: 3}
