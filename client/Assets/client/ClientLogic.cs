@@ -12,9 +12,10 @@ using UnityEditor.Experimental.GraphView;
 
 public enum State
 {
-    NotBlocked,
-    Rotating,
-    Suspended,
+    FollowerCentralized,
+    HorizontalSway,
+    VerticalSway,
+    Stable,
     AdjustToPlayerView
 }
 
@@ -25,19 +26,124 @@ public class GUIMovementStateMachine
 
     public GUIMovementStateMachine()
     {
-        currentState = State.NotBlocked; // Initial state
+        currentState = State.FollowerCentralized; // Initial state
         desiredMotionVal = 0;
     }
 
-    public void TransitionTo(State newState)
+    public void TransitionState(float angleFromCameraFustrum, int collisionCountMain, int collisionCountSide, float maxSwayAngleFromCameraFustrum = 40f, float maxAngleFromCameraFustrum = 50f, float minAngleFromCameraFustrumAfterAdjust = 5f)
     {
-        currentState = newState;
+        switch (currentState) {
+            case State.FollowerCentralized:
+                Debug.Log("q1");
+                if (collisionCountMain > 1) currentState = State.HorizontalSway; break;
+            case State.HorizontalSway:
+                Debug.Log("q2");
+                if (collisionCountMain == 0) currentState = State.Stable;
+                else if (angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.VerticalSway;
+                break;
+            case State.VerticalSway:
+                Debug.Log("q3");
+                if (collisionCountMain == 0) currentState = State.Stable; 
+                break;
+            case State.Stable:
+                Debug.Log("q4");
+                if (collisionCountSide == 0 || angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.AdjustToPlayerView;
+                break;
+            case State.AdjustToPlayerView:
+                Debug.Log("q5");
+                if (angleFromCameraFustrum < minAngleFromCameraFustrumAfterAdjust) currentState = State.FollowerCentralized;
+                break;
+        }
     }
 
     public State GetCurrentState()
     {
         return currentState;
     }
+
+    public void AnalyzeAndMoveGUI(GameObject gui, Transform CameraTransform, List<string> uiObstructedObjectsMain, List<string> uiObstructedObjectsSide, Dictionary<string, GameObject> anchors, float uiFollowSpeed)
+    {
+        float distanceFromPlayer = 2.0f; // Adjust this value as needed
+        Vector3 forwardDirection = CameraTransform.forward;
+        Vector3 baseDesiredPosition = CameraTransform.position + forwardDirection * distanceFromPlayer;
+
+        Vector3 desiredPosition = baseDesiredPosition;
+
+        // Direction from player to current UI position
+        Vector3 dirToCanvas = gui.transform.position - CameraTransform.position;
+        dirToCanvas.y = 0;
+        dirToCanvas.Normalize();
+
+        // Direction from player to average anchor position
+        Vector3 avgAnchorPos = GetAvgAnchorPos(anchors);
+        Vector3 dirToAvgAnchor = avgAnchorPos - CameraTransform.position;
+        dirToAvgAnchor.y = 0;
+        dirToAvgAnchor.Normalize();
+
+        // Cross product to determine rotation direction
+        Vector3 cross = Vector3.Cross(dirToCanvas, dirToAvgAnchor);
+
+        // Determine rotation direction based on cross product
+        float rotationDirection = cross.y > 0 ? -1f : 1f;
+
+        // Adjust desired position by rotating it around the player
+        float rotationSpeed = 5.0f; // Degrees per second, adjust as needed
+
+        //calculate angle in 2D XZ plane between camera and object
+        Vector3 CameraPosition = new Vector3(CameraTransform.position.x, CameraTransform.position.y, CameraTransform.position.z);
+        Vector3 CameraDirection = new Vector3(CameraTransform.forward.x, 0, CameraTransform.forward.z);
+        Vector3 dirToCanvasNoY = new Vector3(dirToCanvas.x, 0, dirToCanvas.z);
+
+        float angleInDegrees = Vector3.Angle(CameraDirection, dirToCanvas);
+        TransitionState(angleInDegrees, uiObstructedObjectsMain.Count, uiObstructedObjectsSide.Count);
+        switch (currentState)
+        {
+            case State.FollowerCentralized:
+                desiredPosition = CameraPosition + forwardDirection * distanceFromPlayer;
+                break;
+            case State.HorizontalSway:
+                float angularSpeed = 5f;
+                desiredPosition = RotateAroundPoint(
+                    gui.transform.position,
+                    CameraPosition,
+                    Quaternion.Euler(0, angularSpeed, 0)
+                );
+
+                break;
+            case State.VerticalSway:
+                desiredPosition = gui.transform.position;
+                desiredPosition.y = CameraPosition.y + 1;
+                break;
+            case State.Stable:
+                desiredPosition = gui.transform.position;
+                break;
+            case State.AdjustToPlayerView:
+                desiredPosition = CameraPosition + forwardDirection * distanceFromPlayer;
+                break;
+        }
+        float positionLerpSpeed = uiFollowSpeed * Time.deltaTime;
+        gui.transform.position = Vector3.Lerp(
+            gui.transform.position,
+            desiredPosition,
+            positionLerpSpeed
+        );
+
+    }
+    Vector3 GetAvgAnchorPos(Dictionary<string, GameObject> anchors)
+    {
+        Vector3 avgAnchorPos = Vector3.zero;
+        foreach (var anchor in anchors.Values)
+        {
+            avgAnchorPos += anchor.transform.position;
+        }
+        avgAnchorPos /= anchors.Count;
+        return avgAnchorPos;
+    }
+    private Vector3 RotateAroundPoint(Vector3 point, Vector3 pivot, Quaternion rotation)
+    {
+        return rotation * (point - pivot) + pivot;
+    }
+
 }
 
 public class ClientLogic : MonoBehaviour
@@ -140,17 +246,6 @@ public class ClientLogic : MonoBehaviour
         UpdateUIRotation();
     }
 
-    private Vector3 GetAvgAnchorPos()
-    {
-        Vector3 avgAnchorPos = Vector3.zero;
-        foreach (var anchor in anchors.Values)
-        {
-            avgAnchorPos += anchor.transform.position;
-        }
-        avgAnchorPos /= anchors.Count;
-        return avgAnchorPos;
-    }
-
     private Vector3 RotateAroundPoint(Vector3 point, Vector3 pivot, Quaternion rotation)
     {
         return rotation * (point - pivot) + pivot;
@@ -159,6 +254,8 @@ public class ClientLogic : MonoBehaviour
     {
         if (uiCanvasInstance != null && playerCamera != null)
         {
+            guiMovementStateMachine.AnalyzeAndMoveGUI(uiCanvasInstance, playerCamera.transform, uiObstructedObjectsMain, uiObstructedObjectsSide, anchors, uiFollowSpeed);
+            /*
             Debug.Log(guiMovementStateMachine.GetCurrentState());
             // Desired position directly in front of the player
             float distanceFromPlayer = 2.0f; // Adjust this value as needed
@@ -213,7 +310,7 @@ public class ClientLogic : MonoBehaviour
 
                 //CREATE A STATE MACHINE TO MAKE THIS BS CLEARER
 
-                Debug.Log(angleInDegrees);
+                Debug.Log(angleInDegrees)
                 if (angleInDegrees < 40f)
                 {
                     guiMovementStateMachine.TransitionTo(State.Rotating);
@@ -279,24 +376,7 @@ public class ClientLogic : MonoBehaviour
             else
             {
                 Debug.Log("D");
-                /*
-                // Decrease cumulative rotation angle to return UI to the front
-                cumulativeRotationAngle -= rotationSpeed * Time.deltaTime;
-
-                // Ensure cumulative rotation angle doesn't go below zero
-                cumulativeRotationAngle = Mathf.Max(cumulativeRotationAngle, 0f);
-
-                // Calculate the total rotation angle with direction
-                float totalRotationAngle = cumulativeRotationAngle * rotationDirection;
-
-                // Rotate the desired position back towards the front
-                desiredPosition = RotateAroundPoint(
-                    baseDesiredPosition,
-                    playerCamera.transform.position,
-                    Quaternion.Euler(0, totalRotationAngle, 0)
-                );
-
-                Debug.Log("UI obstruction cleared, returning UI to original position");*/
+                
                 cumulativeRotationAngle = 0;
                 desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
             }
@@ -314,6 +394,7 @@ public class ClientLogic : MonoBehaviour
             // uiCanvasInstance.transform.LookAt(playerCamera.transform.position);
 
             Debug.Log($"UI Position updated: {uiCanvasInstance.transform.position}");
+            */
         }
     }
 
