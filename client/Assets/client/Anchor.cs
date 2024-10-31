@@ -13,7 +13,7 @@ public class Anchor : MonoBehaviour
 
     // Variables to control raycasting frequency
     private float timeSinceLastRaycast = 0f;
-    public float raycastInterval = 0.2f; // Raycast every 0.2 seconds
+    public float raycastInterval = 0.06f; // Raycast every 0.2 seconds
 
     public List<Transform> raycastOrigins;
 
@@ -109,9 +109,12 @@ public class Anchor : MonoBehaviour
         // Calculate the direction from the raycast origin to the player
         Vector3 directionToPlayer = (playerTransform.position - origin).normalized;
 
+        Vector3 toPlayer = playerTransform.position - origin;
+        float maxDistance = toPlayer.magnitude;
+
         // Perform the raycast
         RaycastHit hitInfo;
-        if (Physics.Raycast(origin, directionToPlayer, out hitInfo, Mathf.Infinity, raycastLayerMask))
+        if (Physics.Raycast(origin, directionToPlayer, out hitInfo, maxDistance, raycastLayerMask))
         {
             // Visualize the raycast in the Scene view
             if (DebugMode)
@@ -151,24 +154,37 @@ public class Anchor : MonoBehaviour
 
     private void HandleUIHit(bool mainColliderHit, bool sideColliderHit)
     {
-        if ((mainColliderHit || sideColliderHit) && !isUICurrentlyMoved)
+        if (mainColliderHit)
         {
-            // Move the UI out of the way if it's not already moved
-            isUICurrentlyMoved = true;
             if (client != null)
             {
-                client.MoveUIOutOfWay();
+                client.uiObstructedObjectsMain.Add(this.id);
+                client.uiObstructedObjectsSide.Remove(this.id);
             }
         }
-        else if (!mainColliderHit && !sideColliderHit && isUICurrentlyMoved)
+        else if (sideColliderHit)
         {
-            // Return the UI to its original position if no colliders are hit
-            isUICurrentlyMoved = false;
             if (client != null)
             {
-                client.ReturnUIToOriginalPosition();
+                client.uiObstructedObjectsMain.Remove(this.id);
+                client.uiObstructedObjectsSide.Add(this.id);
             }
         }
+        else
+        {
+            if (client != null)
+            {
+                client.uiObstructedObjectsMain.Remove(this.id);
+                client.uiObstructedObjectsSide.Remove(this.id);
+            }
+        }
+        // else if (!mainColliderHit && !sideColliderHit)
+        // {
+        //     if (client != null)
+        //     {
+        //         client.ui
+        //     }
+        // }
         // If the UI is already moved and any collider is hit, do nothing (keep it moved)
     }
 
@@ -191,7 +207,7 @@ public class Anchor : MonoBehaviour
 
     IEnumerator SelfDestroy()
     {
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(4);
 
         // Ensure the UI is reset when this anchor is destroyed
 
@@ -201,7 +217,7 @@ public class Anchor : MonoBehaviour
         {
             Destroy(lineInstance);
         }
-        yield return new WaitForSeconds(1.0f);
+        yield return new WaitForSeconds(1.5f);
         Destroy(gameObject);
         if (isUICurrentlyMoved)
         {
@@ -212,12 +228,18 @@ public class Anchor : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (isUICurrentlyMoved)
+        // if (isUICurrentlyMoved)
+        // {
+        //     if (client != null)
+        //     {
+        //         client.ReturnUIToOriginalPosition();
+        //     }
+        // }
+
+        if (client != null)
         {
-            if (client != null)
-            {
-                client.ReturnUIToOriginalPosition();
-            }
+            client.uiObstructedObjectsMain.Remove(this.id);
+            client.uiObstructedObjectsSide.Remove(this.id);
         }
     }
 }
