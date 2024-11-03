@@ -30,7 +30,7 @@ public class GUIMovementStateMachine
         desiredMotionVal = 0;
     }
 
-    public void TransitionState(float angleFromCameraFustrum, int collisionCountMain, int collisionCountSide, float maxSwayAngleFromCameraFustrum = 40f, float maxAngleFromCameraFustrum = 70f, float minAngleFromCameraFustrumAfterAdjust = 5f)
+    public void TransitionState(float angleFromCameraFustrum, int collisionCountMain, int collisionCountSide, float maxSwayAngleFromCameraFustrum = 60f, float maxAngleFromCameraFustrum = 70f, float minAngleFromCameraFustrumAfterAdjust = 5f)
     {
         switch (currentState) {
             case State.FollowerCentralized:
