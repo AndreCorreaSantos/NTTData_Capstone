@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\rafae\\Documents\\GitHub\\NTTData_Capstone\\client\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2859A56-AB4A-51F9-60BB-1B6FC96E8C70}|Assembly-CSharp.csproj|c:\\users\\rafae\\documents\\github\\nttdata_capstone\\client\\assets\\client\\anchor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A2859A56-AB4A-51F9-60BB-1B6FC96E8C70}|Assembly-CSharp.csproj|solutionrelative:assets\\client\\anchor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2859A56-AB4A-51F9-60BB-1B6FC96E8C70}|Assembly-CSharp.csproj|C:\\Users\\rafae\\Documents\\GitHub\\NTTData_Capstone\\client\\assets\\client\\clientlogic.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2859A56-AB4A-51F9-60BB-1B6FC96E8C70}|Assembly-CSharp.csproj|solutionrelative:assets\\client\\clientlogic.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2859A56-AB4A-51F9-60BB-1B6FC96E8C70}|Assembly-CSharp.csproj|c:\\users\\rafae\\documents\\github\\nttdata_capstone\\client\\assets\\client\\clientlogic.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A2859A56-AB4A-51F9-60BB-1B6FC96E8C70}|Assembly-CSharp.csproj|solutionrelative:assets\\client\\clientlogic.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2859A56-AB4A-51F9-60BB-1B6FC96E8C70}|Assembly-CSharp.csproj|c:\\users\\rafae\\documents\\github\\nttdata_capstone\\client\\assets\\client\\anchor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2859A56-AB4A-51F9-60BB-1B6FC96E8C70}|Assembly-CSharp.csproj|solutionrelative:assets\\client\\anchor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,30 +18,30 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Anchor.cs",
               "DocumentMoniker": "C:\\Users\\rafae\\Documents\\GitHub\\NTTData_Capstone\\client\\Assets\\client\\Anchor.cs",
               "RelativeDocumentMoniker": "Assets\\client\\Anchor.cs",
               "ToolTip": "C:\\Users\\rafae\\Documents\\GitHub\\NTTData_Capstone\\client\\Assets\\client\\Anchor.cs",
               "RelativeToolTip": "Assets\\client\\Anchor.cs",
-              "ViewState": "AgIAAFMAAAAAAAAAAAAwwG8AAAArAAAAAAAAAA==",
+              "ViewState": "AgIAAFMAAAAAAAAAAAA9wG8AAAArAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-10-30T02:33:36.111Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "ClientLogic.cs",
               "DocumentMoniker": "C:\\Users\\rafae\\Documents\\GitHub\\NTTData_Capstone\\client\\Assets\\client\\ClientLogic.cs",
               "RelativeDocumentMoniker": "Assets\\client\\ClientLogic.cs",
               "ToolTip": "C:\\Users\\rafae\\Documents\\GitHub\\NTTData_Capstone\\client\\Assets\\client\\ClientLogic.cs",
               "RelativeToolTip": "Assets\\client\\ClientLogic.cs",
-              "ViewState": "AgIAAMwAAAAAAAAAAAD4vxUBAAANAAAAAAAAAA==",
+              "ViewState": "AgIAABgAAAAAAAAAAAAhwD8AAADUAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-10-02T00:52:04.437Z",
               "EditorCaption": ""

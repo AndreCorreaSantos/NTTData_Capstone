@@ -30,7 +30,7 @@ public class GUIMovementStateMachine
         desiredMotionVal = 0;
     }
 
-    public void TransitionState(float angleFromCameraFustrum, int collisionCountMain, int collisionCountSide, float maxSwayAngleFromCameraFustrum = 40f, float maxAngleFromCameraFustrum = 50f, float minAngleFromCameraFustrumAfterAdjust = 5f)
+    public void TransitionState(float angleFromCameraFustrum, int collisionCountMain, int collisionCountSide, float maxSwayAngleFromCameraFustrum = 40f, float maxAngleFromCameraFustrum = 60f, float minAngleFromCameraFustrumAfterAdjust = 5f)
     {
         switch (currentState) {
             case State.FollowerCentralized:
@@ -43,11 +43,13 @@ public class GUIMovementStateMachine
                 break;
             case State.VerticalSway:
                 Debug.Log("q3");
-                if (collisionCountMain == 0) currentState = State.Stable; 
+                if (collisionCountMain == 0) currentState = State.Stable;
+                if (angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.AdjustToPlayerView;
                 break;
             case State.Stable:
                 Debug.Log("q4");
-                if (collisionCountSide == 0 || angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.AdjustToPlayerView;
+                if (angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.AdjustToPlayerView;
+                else if (collisionCountMain > 0) currentState = State.HorizontalSway;
                 break;
             case State.AdjustToPlayerView:
                 Debug.Log("q5");
@@ -102,7 +104,7 @@ public class GUIMovementStateMachine
                 desiredPosition = CameraPosition + forwardDirection * distanceFromPlayer;
                 break;
             case State.HorizontalSway:
-                float angularSpeed = 5f;
+                float angularSpeed = 5f * rotationDirection;
                 desiredPosition = RotateAroundPoint(
                     gui.transform.position,
                     CameraPosition,
