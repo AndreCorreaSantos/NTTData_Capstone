@@ -39,7 +39,7 @@ public class GUIMovementStateMachine
             case State.HorizontalSway:
                 Debug.Log("q2");
                 if (collisionCountMain == 0) currentState = State.Stable;
-                else if (angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.VerticalSway;
+                else if (angleFromCameraFustrum > maxSwayAngleFromCameraFustrum) currentState = State.VerticalSway;
                 break;
             case State.VerticalSway:
                 Debug.Log("q3");
