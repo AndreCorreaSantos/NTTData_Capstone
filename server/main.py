@@ -1,4 +1,5 @@
-
+from langchain_openai.chat_models import AzureChatOpenAI
+from datetime import datetime
 import traceback
 from fastapi import FastAPI, WebSocket
 import uvicorn
@@ -12,6 +13,7 @@ import base64
 import aiofiles
 import os
 import locks
+import gpt_get_yolo_classes
 
 import asyncio
 from image_processing import process_image, calculate_background_colors
@@ -42,7 +44,6 @@ def load_depth_model():
 
 
 # import danger_analysis
-from datetime import datetime
 
 app = FastAPI()
 model = YOLO("yolov8n.pt")
@@ -51,6 +52,12 @@ depth_model = load_depth_model()
 
 now = datetime.now()
 
+chat = AzureChatOpenAI(
+    deployment_name="grad-eng",  # Your deployment name
+    openai_api_version="2023-03-15-preview",
+    model="gpt-4o"
+)
+classes = gpt_get_yolo_classes.get_classes_from_prompt(chat)
 
 PERSON_CLASS_NAME = "person"
 
