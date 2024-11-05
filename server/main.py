@@ -158,8 +158,8 @@ async def websocket_endpoint(websocket: WebSocket):
                         # Assuming result_json is a list of detections      
                         for det in result_json:
                             print("Det: ", det)
-                            # Check if the detected class is "person"
-                            if(det["name"] == "person"):
+                            # Check if the detected class is in the list of classes
+                            if(det["name"] in classes):
                                 print("Person detected")
                                 obj_data = process_image(
                                     current_frame,
