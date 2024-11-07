@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using TMPro;
 using System;
 using UnityEngine.XR.ARFoundation.Samples;
-using UnityEditor.Experimental.GraphView;
 // using UnityEngine.UIElements;
 // using UnityEngine.UIElements;
 
@@ -30,29 +29,29 @@ public class GUIMovementStateMachine
         desiredMotionVal = 0;
     }
 
-    public void TransitionState(float angleFromCameraFustrum, int collisionCountMain, int collisionCountSide, float maxSwayAngleFromCameraFustrum = 60f, float maxAngleFromCameraFustrum = 70f, float minAngleFromCameraFustrumAfterAdjust = 5f)
+    public void TransitionState(float angleFromCameraFustrum, int collisionCountMain, int collisionCountSide, float maxSwayAngleFromCameraFustrum = 45f, float maxAngleFromCameraFustrum = 60f, float minAngleFromCameraFustrumAfterAdjust = 5f)
     {
         switch (currentState) {
             case State.FollowerCentralized:
-                Debug.Log("q1");
+                //Debug.Log("q1");
                 if (collisionCountMain > 1) currentState = State.HorizontalSway; break;
             case State.HorizontalSway:
-                Debug.Log("q2");
+                //Debug.Log("q2");
                 if (collisionCountMain == 0) currentState = State.Stable;
                 else if (angleFromCameraFustrum > maxSwayAngleFromCameraFustrum) currentState = State.VerticalSway;
                 break;
             case State.VerticalSway:
-                Debug.Log("q3");
+                //Debug.Log("q3");
                 if (collisionCountMain == 0) currentState = State.Stable;
                 if (angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.AdjustToPlayerView;
                 break;
             case State.Stable:
-                Debug.Log("q4");
+                //Debug.Log("q4");
                 if (angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.AdjustToPlayerView;
                 else if (collisionCountMain > 0) currentState = State.HorizontalSway;
                 break;
             case State.AdjustToPlayerView:
-                Debug.Log("q5");
+                //Debug.Log("q5");
                 if (angleFromCameraFustrum < minAngleFromCameraFustrumAfterAdjust) currentState = State.FollowerCentralized;
                 break;
         }
@@ -95,6 +94,8 @@ public class GUIMovementStateMachine
         Vector3 CameraPosition = new Vector3(CameraTransform.position.x, CameraTransform.position.y, CameraTransform.position.z);
         Vector3 CameraDirection = new Vector3(CameraTransform.forward.x, 0, CameraTransform.forward.z);
         Vector3 dirToCanvasNoY = new Vector3(dirToCanvas.x, 0, dirToCanvas.z);
+
+        Debug.Log(uiObstructedObjectsMain.Count);
 
         float angleInDegrees = Vector3.Angle(CameraDirection, dirToCanvas);
         TransitionState(angleInDegrees, uiObstructedObjectsMain.Count, uiObstructedObjectsSide.Count);
@@ -190,6 +191,8 @@ public class ClientLogic : MonoBehaviour
     public List<string> uiObstructedObjectsMain = new List<string>();
     public List<string> uiObstructedObjectsSide = new List<string>();
 
+    //private List<string> uiObstructedObjectsMain = new List<string>();
+
     public GameObject redDot;
 
     private float cumulativeRotationAngle = 0f; // Current cumulative rotation angle in degrees
@@ -252,152 +255,11 @@ public class ClientLogic : MonoBehaviour
     {
         return rotation * (point - pivot) + pivot;
     }
+
+
     private void UpdateUIPosition()
     {
-        if (uiCanvasInstance != null && playerCamera != null)
-        {
-            guiMovementStateMachine.AnalyzeAndMoveGUI(uiCanvasInstance, playerCamera.transform, uiObstructedObjectsMain, uiObstructedObjectsSide, anchors, uiFollowSpeed);
-            /*
-            Debug.Log(guiMovementStateMachine.GetCurrentState());
-            // Desired position directly in front of the player
-            float distanceFromPlayer = 2.0f; // Adjust this value as needed
-            Vector3 forwardDirection = playerCamera.transform.forward;
-            Vector3 baseDesiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
-
-            Vector3 desiredPosition = baseDesiredPosition;
-
-            // Direction from player to current UI position
-            Vector3 dirToCanvas = uiCanvasInstance.transform.position - playerCamera.transform.position;
-            dirToCanvas.y = 0;
-            dirToCanvas.Normalize();
-
-            // Direction from player to average anchor position
-            Vector3 avgAnchorPos = GetAvgAnchorPos();
-            Vector3 dirToAvgAnchor = avgAnchorPos - playerCamera.transform.position;
-            dirToAvgAnchor.y = 0;
-            dirToAvgAnchor.Normalize();
-
-            // Cross product to determine rotation direction
-            Vector3 cross = Vector3.Cross(dirToCanvas, dirToAvgAnchor);
-
-            // Determine rotation direction based on cross product
-            float rotationDirection = cross.y > 0 ? -1f : 1f;
-
-            // Adjust desired position by rotating it around the player
-            float rotationSpeed = 5.0f; // Degrees per second, adjust as needed
-
-            //calculate angle in 2D XZ plane between camera and object
-            Vector3 CameraPosition = new Vector3(playerCamera.transform.position.x, playerCamera.transform.position.y, playerCamera.transform.position.z);
-            Vector3 CameraDirection = new Vector3(playerCamera.transform.forward.x, 0, playerCamera.transform.forward.z);
-            Vector3 dirToCanvasNoY = new Vector3(dirToCanvas.x, 0, dirToCanvas.z);
-
-            float angleInDegrees = Vector3.Angle(CameraDirection, dirToCanvas);
-            print(angleInDegrees);
-
-
-            if (guiMovementStateMachine.GetCurrentState() == State.AdjustToPlayerView)
-            {
-                Debug.Log("A");
-                desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
-                Debug.Log(angleInDegrees);
-                if (angleInDegrees < 5f)
-                {
-                    guiMovementStateMachine.TransitionTo(State.NotBlocked);
-                }
-
-            }
-            else if (uiObstructedObjectsMain.Count > 0)
-            {
-                Debug.Log("B");
-
-                //CREATE A STATE MACHINE TO MAKE THIS BS CLEARER
-
-                Debug.Log(angleInDegrees)
-                if (angleInDegrees < 40f)
-                {
-                    guiMovementStateMachine.TransitionTo(State.Rotating);
-                    // Increase cumulative rotation angle over time
-                    cumulativeRotationAngle += rotationSpeed * Time.deltaTime;
-
-                    // Limit the cumulative rotation angle to the maximum allowed
-                    cumulativeRotationAngle = Mathf.Min(cumulativeRotationAngle, maxRotationAngle);
-
-                    // Calculate the total rotation angle with direction
-                    float totalRotationAngle = cumulativeRotationAngle * rotationDirection;
-
-                    // Rotate the desired position around the player's position
-                    desiredPosition = RotateAroundPoint(
-                        baseDesiredPosition,
-                        playerCamera.transform.position,
-                        Quaternion.Euler(0, totalRotationAngle, 0)
-                    );
-                    //Debug.Log($"Obstructed: Rotating UI by cumulative angle {cumulativeRotationAngle} degrees");
-                }
-                else if (angleInDegrees > 45f && angleInDegrees <= 65f)
-                {
-                    cumulativeRotationAngle = 0;
-                    guiMovementStateMachine.TransitionTo(State.Suspended);
-
-                    float targetVerticalOffset = 1f;
-                    float smoothTime = uiMoveDuration;
-                    uiVerticalOffset = Mathf.SmoothDamp(uiVerticalOffset, targetVerticalOffset, ref uiVerticalOffsetVelocity, smoothTime);
-
-                    // Apply vertical offset
-                    desiredPosition = uiCanvasInstance.transform.position;
-                    desiredPosition.y = playerCamera.transform.position.y + 1;
-
-                }
-                else
-                {
-                    guiMovementStateMachine.TransitionTo(State.AdjustToPlayerView);
-                }
-
-            }
-            else if (uiObstructedObjectsSide.Count > 0)
-            {
-                Debug.Log("C");
-
-                //calculate angle in 2D XZ plane between camera and object
-                //check if held outside of camera
-
-                // Rotate the desired position around the player's position
-                cumulativeRotationAngle = 0;
-                desiredPosition = uiCanvasInstance.transform.position;
-
-                if (angleInDegrees > 45f && angleInDegrees <= 65f)
-                {
-                    guiMovementStateMachine.TransitionTo(State.Suspended);
-                    desiredPosition = uiCanvasInstance.transform.position;
-                    desiredPosition.y = playerCamera.transform.position.y + 1;
-                }
-                if (angleInDegrees > 65f)
-                {
-                    guiMovementStateMachine.TransitionTo(State.AdjustToPlayerView);
-                }
-            }
-            else
-            {
-                Debug.Log("D");
-                
-                cumulativeRotationAngle = 0;
-                desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
-            }
-
-            // Smoothly move the UI towards the adjusted desired position
-            float positionLerpSpeed = uiFollowSpeed * Time.deltaTime;
-            uiCanvasInstance.transform.position = Vector3.Lerp(
-                uiCanvasInstance.transform.position,
-                desiredPosition,
-                positionLerpSpeed
-            );
-
-            // Optionally, make the UI face the player if desired
-            // Uncomment if you want the UI to always face the player
-            // uiCanvasInstance.transform.LookAt(playerCamera.transform.position);
-
-            Debug.Log($"UI Position updated: {uiCanvasInstance.transform.position}");
-            */
-        }
+        if (uiCanvasInstance != null && playerCamera != null) guiMovementStateMachine.AnalyzeAndMoveGUI(uiCanvasInstance, playerCamera.transform, uiObstructedObjectsMain, uiObstructedObjectsSide, anchors, uiFollowSpeed);
     }
 
     private void UpdateUIRotation()

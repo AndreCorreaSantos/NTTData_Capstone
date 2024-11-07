@@ -833,7 +833,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80d5185a9d36f8b43aa2487813fef5f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  url: ws://localhost:8000
+  url: ws://192.168.0.201:8000
 --- !u!4 &700190883
 Transform:
   m_ObjectHideFlags: 0
