@@ -13,7 +13,7 @@ public class Anchor : MonoBehaviour
 
     // Variables to control raycasting frequency
     private float timeSinceLastRaycast = 0f;
-    public float raycastInterval = 0.06f; // Raycast every 0.2 seconds
+    public float raycastInterval = 0.1f; // Raycast every 0.1 seconds for smoother detection
 
     public List<Transform> raycastOrigins;
 
@@ -23,7 +23,7 @@ public class Anchor : MonoBehaviour
     public string id;
 
     private bool DebugMode = true;
-    private bool isUICurrentlyMoved = false;
+
 
     private enum RaycastHitType
     {
@@ -55,10 +55,6 @@ public class Anchor : MonoBehaviour
             raycastLayerMask = Physics.DefaultRaycastLayers;
             // Include UI layer explicitly
             raycastLayerMask |= 1 << LayerMask.NameToLayer("UI");
-            // Include layers for mainCollider and sideCollider if they are on different layers
-            // For example:
-            // raycastLayerMask |= 1 << LayerMask.NameToLayer("YourMainColliderLayer");
-            // raycastLayerMask |= 1 << LayerMask.NameToLayer("YourSideColliderLayer");
         }
     }
 
@@ -94,10 +90,17 @@ public class Anchor : MonoBehaviour
             if (hitType == RaycastHitType.MainCollider)
             {
                 mainColliderHit = true;
+                sideColliderHit = false;
             }
             else if (hitType == RaycastHitType.SideCollider)
             {
                 sideColliderHit = true;
+                mainColliderHit = false;
+            }
+            else
+            {
+                mainColliderHit = false;
+                sideColliderHit = false;
             }
         }
 
@@ -109,12 +112,9 @@ public class Anchor : MonoBehaviour
         // Calculate the direction from the raycast origin to the player
         Vector3 directionToPlayer = (playerTransform.position - origin).normalized;
 
-        Vector3 toPlayer = playerTransform.position - origin;
-        float maxDistance = toPlayer.magnitude;
-
         // Perform the raycast
         RaycastHit hitInfo;
-        if (Physics.Raycast(origin, directionToPlayer, out hitInfo, maxDistance, raycastLayerMask))
+        if (Physics.Raycast(origin, directionToPlayer, out hitInfo, Mathf.Infinity, raycastLayerMask))
         {
             // Visualize the raycast in the Scene view
             if (DebugMode)
@@ -130,7 +130,7 @@ public class Anchor : MonoBehaviour
             }
             else if (hitInfo.transform.CompareTag("mainCollider"))
             {
-                if (DebugMode) Debug.Log("Anchor raycast hit the mainCollider!");
+                client.mainHitPositions.Add(hitInfo.point);
                 return RaycastHitType.MainCollider;
             }
             else if (hitInfo.transform.CompareTag("sideCollider"))
@@ -156,90 +156,44 @@ public class Anchor : MonoBehaviour
     {
         if (mainColliderHit)
         {
-            if (client != null)
-            {
-                client.uiObstructedObjectsMain.Add(this.id);
-                client.uiObstructedObjectsSide.Remove(this.id);
-            }
+            client.sideObstructingAnchors.Remove(id);
+            client.mainObstructingAnchors.Add(id);
         }
         else if (sideColliderHit)
         {
-            if (client != null)
-            {
-                client.uiObstructedObjectsMain.Remove(this.id);
-                client.uiObstructedObjectsSide.Add(this.id);
-            }
+            client.mainObstructingAnchors.Remove(id);
+            client.sideObstructingAnchors.Add(id);
         }
         else
         {
-            if (client != null)
-            {
-                client.uiObstructedObjectsMain.Remove(this.id);
-                client.uiObstructedObjectsSide.Remove(this.id);
-            }
+            client.mainObstructingAnchors.Remove(id);
+            client.sideObstructingAnchors.Remove(id);
         }
-        // else if (!mainColliderHit && !sideColliderHit)
-        // {
-        //     if (client != null)
-        //     {
-        //         client.ui
-        //     }
-        // }
-        // If the UI is already moved and any collider is hit, do nothing (keep it moved)
-    }
-
-    private void UpdateLine()
-    {
-        if (lineInstance == null) return;
-
-        Vector3 directionToPlayer = (playerTransform.position - transform.position);
-        float distance = directionToPlayer.magnitude;
-
-        // Set the position halfway between the anchor and the player
-        lineInstance.transform.position = transform.position + directionToPlayer / 2;
-
-        // Scale the cylinder to match the distance
-        lineInstance.transform.localScale = new Vector3(0.05f, distance / 2.2f, 0.05f);
-
-        // Rotate the cylinder to face the player, making sure the Y-axis is aligned
-        lineInstance.transform.rotation = Quaternion.FromToRotation(Vector3.up, directionToPlayer);
     }
 
     IEnumerator SelfDestroy()
     {
-        yield return new WaitForSeconds(4);
+        yield return new WaitForSeconds(3);
 
         // Ensure the UI is reset when this anchor is destroyed
-
         client.DeleteAnchor(id);
+        client.mainObstructingAnchors.Remove(id);
+        client.sideObstructingAnchors.Remove(id);
 
         if (lineInstance != null)
         {
             Destroy(lineInstance);
         }
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(1.0f);
         Destroy(gameObject);
-        if (isUICurrentlyMoved)
-        {
-            HandleUIHit(false, false);
-        }
-
     }
 
     private void OnDestroy()
     {
-        // if (isUICurrentlyMoved)
-        // {
-        //     if (client != null)
-        //     {
-        //         client.ReturnUIToOriginalPosition();
-        //     }
-        // }
-
         if (client != null)
         {
-            client.uiObstructedObjectsMain.Remove(this.id);
-            client.uiObstructedObjectsSide.Remove(this.id);
+            client.mainObstructingAnchors.Remove(id);
+            client.sideObstructingAnchors.Remove(id);
         }
     }
 }

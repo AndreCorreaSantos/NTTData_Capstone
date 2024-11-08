@@ -175,10 +175,9 @@ public class ClientLogic : MonoBehaviour
 
     private Vector3[] UIScreenCorners = new Vector3[4];
     [SerializeField] private bool flipColors = false;
+    public List<Vector3> mainHitPositions = new List<Vector3>();
 
     public Dictionary<string, GameObject> anchors = new Dictionary<string, GameObject>();
-
-    public GameObject debugobj;
 
     // Variables for smooth UI movement
     public float uiFollowSpeed = 5f; // Adjust this value to control follow speed
@@ -188,29 +187,38 @@ public class ClientLogic : MonoBehaviour
     private float uiVerticalOffsetVelocity = 0f;
     public float uiMoveAmount = 1.0f; // Distance to move the UI when obstructed
     public float uiMoveDuration = 0.5f; // Time to move the UI when obstructed
-    public List<string> uiObstructedObjectsMain = new List<string>();
-    public List<string> uiObstructedObjectsSide = new List<string>();
 
-    //private List<string> uiObstructedObjectsMain = new List<string>();
+    // Use HashSet to track obstructing anchors
+    public HashSet<string> mainObstructingAnchors = new HashSet<string>();
+    public HashSet<string> sideObstructingAnchors = new HashSet<string>();
+
+    // Property to get the obstruction count
+    public int mainUiObstructedCount
+    {
+        get { return mainObstructingAnchors.Count; }
+    }
+
+    public int sideUiObstructedCount
+    {
+        get { return sideObstructingAnchors.Count; }
+    }
+
+    // Variables to manage offset direction and obstruction timing
+    private Vector2 lastOffsetDirection = Vector2.zero;
+    private float timeSinceLastObstruction = 0f;
+    private float obstructionGracePeriod = 0.1f; // Adjust as needed to smooth out jitter
+
+    public GameObject debugPrefab;
 
     public GameObject redDot;
 
-    private float cumulativeRotationAngle = 0f; // Current cumulative rotation angle in degrees
-    public float maxRotationAngle = 90f;        // Maximum rotation angle to prevent over-rotation
-
-    private GUIMovementStateMachine guiMovementStateMachine;
-
-
     void Start()
     {
-        guiMovementStateMachine = new GUIMovementStateMachine();
-        debugobj = Instantiate(redDot, new Vector3(0, 0, 0), Quaternion.identity);
         StartWebSocket();
         SpawnUI();
         connection.OnServerMessage += HandleServerMessage;
         // redDot = Instantiate(redDot, new Vector3(0, 0, 0), Quaternion.identity);
     }
-
 
     void Update()
     {
@@ -228,38 +236,65 @@ public class ClientLogic : MonoBehaviour
                 UIscreenCorner.x /= Screen.width;
                 UIscreenCorner.y /= Screen.height;
                 UIScreenCorners[i] = UIscreenCorner;
-                //Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
+                // Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
             }
 
             Texture2D colorTexture = ConvertToTexture2D(colorImage.texture);
-            Texture2D depthTexture = ConvertToTexture2D(depthImage.texture);
 
             if (colorTexture != null)
             {
                 colorImageBytes = colorTexture.EncodeToJPG();
-            }
-
-            if (depthTexture != null)
-            {
-                depthImageBytes = depthTexture.EncodeToJPG();
+                // colorImageBytes = colorTexture.GetRawTextureData();
+                // print(colorTexture.GetRawTextureData()[0]);
+                // print(colorTexture.format);
             }
 
             SendDataAsync();
         }
+    }
 
+    void LateUpdate()
+    {
+
+        Debug.Log("main: " + mainUiObstructedCount);
+        Debug.Log("side: " + sideUiObstructedCount);
+        Debug.Log("anchors: " + anchors.Count);
+
+        foreach (var anchor in anchors)
+        {
+            Debug.Log(anchor.Key);
+        }
         UpdateUIPosition();
         UpdateUIRotation();
     }
 
-    private Vector3 RotateAroundPoint(Vector3 point, Vector3 pivot, Quaternion rotation)
-    {
-        return rotation * (point - pivot) + pivot;
-    }
-
-
     private void UpdateUIPosition()
     {
-        if (uiCanvasInstance != null && playerCamera != null) guiMovementStateMachine.AnalyzeAndMoveGUI(uiCanvasInstance, playerCamera.transform, uiObstructedObjectsMain, uiObstructedObjectsSide, anchors, uiFollowSpeed);
+        if (uiCanvasInstance != null && playerCamera != null)
+        {
+            // Desired position in front of the player
+            float distanceFromPlayer = 2.0f; // Adjust this value as needed
+            Vector3 forwardDirection = playerCamera.transform.forward;
+            Vector3 desiredPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
+
+            // Adjust vertical position using SmoothDamp
+            bool isObstructed = mainUiObstructedCount > 0 || sideUiObstructedCount > 0;
+            float targetVerticalOffset = isObstructed ? uiMoveAmount : 0f;
+            float smoothTime = uiMoveDuration;
+
+            uiVerticalOffset = Mathf.SmoothDamp(uiVerticalOffset, targetVerticalOffset, ref uiVerticalOffsetVelocity, smoothTime);
+
+            // Apply vertical offset
+            desiredPosition.y += uiVerticalOffset;
+
+            // Smoothly move the UI towards the desired position
+            float positionLerpSpeed = uiFollowSpeed * Time.deltaTime;
+            uiCanvasInstance.transform.position = Vector3.Lerp(
+                uiCanvasInstance.transform.position,
+                desiredPosition,
+                positionLerpSpeed
+            );
+        }
     }
 
     private void UpdateUIRotation()
@@ -290,6 +325,25 @@ public class ClientLogic : MonoBehaviour
                 );
             }
         }
+    }
+
+    private Vector2 CalculateOffsetDirection(List<Vector3> hitPositions)
+    {
+        Vector2 offsetDirection = Vector2.zero;
+        if (hitPositions.Count > 0)
+        {
+            foreach (Vector3 hitPos in hitPositions)
+            {
+                // Project to canvas local space
+                Vector3 localPos = uiCanvasInstance.transform.InverseTransformPoint(hitPos);
+                offsetDirection += new Vector2(localPos.x, localPos.y);
+            }
+
+            offsetDirection /= hitPositions.Count; // Compute mean position
+            offsetDirection = -offsetDirection; // Calculate direction from center to mean hit position
+            offsetDirection.Normalize();
+        }
+        return offsetDirection;
     }
 
     private void HandeServerMessageDangerDetection(string message)
@@ -379,31 +433,8 @@ public class ClientLogic : MonoBehaviour
         colorSetter.SetColor(targetBackgroundColor, targetTextColor);
     }
 
-    // Vector3 GetWorldPositionFromScreenSpace(Vector3 screenPos,Matrix4x4 invMat) {
-    //     // Convert screen position to normalized device coordinates (NDC)
-    //     float ndcX = (screenPos.x - (Screen.width * 0.5f)) / (Screen.width * 0.5f);  // Range [-1, 1]
-    //     float ndcY = (screenPos.y - (Screen.height * 0.5f)) / (Screen.height * 0.5f); // Range [-1, 1]
-
-    //     // Create a point in NDC space (using the near clip plane for z = -1)
-    //     Vector4 nearClipPoint = new Vector4(ndcX, -ndcY, -1.0f, 1.0f);
-
-    //     // Transform the NDC point to world space using the inverse matrix
-    //     Vector4 worldNear = invMat * nearClipPoint;
-
-    //     // Perform perspective divide to convert the Vector4 to Vector3
-    //     Vector3 worldNearPos = new Vector3(worldNear.x / worldNear.w, worldNear.y / worldNear.w, worldNear.z / worldNear.w);
-
-    //     // Get the camera's forward direction to compute ray direction
-    //     Vector3 rayDirection = (worldNearPos - playerCamera.transform.position).normalized;
-
-    //     // Scale the ray direction by the provided depth value (world space depth)
-    //     Vector3 worldPosition = playerCamera.transform.position + rayDirection * screenPos.z;
-
-    //     return worldPosition;
-    // }
     private void SpawnAnchor(ObjectData objData)
     {
-
         Vector3 worldPosition = new Vector3(objData.x, objData.y, objData.z);
         Vector3 localScale = new Vector3(objData.width, objData.height, objData.width);
         string id = objData.id;
@@ -495,17 +526,10 @@ public class ClientLogic : MonoBehaviour
             Vector3 initialPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
 
             uiCanvasInstance = Instantiate(UICanvas, initialPosition, Quaternion.identity);
-            if (uiCanvasInstance == null)
-            {
-                Debug.LogError("Failed to instantiate UI Canvas.");
-                return;
-            }
-            /* booleanToggle = uiCanvasInstance.transform.GetChild(1).GetChild(0).GetChild(3).GetChild(0).GetChild(0).GetChild(4).GetChild(1).GetChild(0).gameObject; */
-            booleanToggle = GameObject.FindWithTag("BooleanToggleTag");
+            booleanToggle = uiCanvasInstance.transform.GetChild(1).GetChild(0).GetChild(3).GetChild(0).GetChild(0).GetChild(3).GetChild(1).GetChild(0).gameObject;
             booleanToggle.GetComponent<Toggle>().onValueChanged.AddListener(delegate {
                 FlipColors();
             });
-
 
             // Make the UI face the player
             uiCanvasInstance.transform.rotation = Quaternion.LookRotation(uiCanvasInstance.transform.position - playerCamera.transform.position);
@@ -553,18 +577,6 @@ public class ClientLogic : MonoBehaviour
         }
         return null;
     }
-
-    // Methods to move the UI out of the way when obstructed by anchor raycasts
-
-    // public void MoveUIOutOfWay()
-    // {
-    //     uiObstructedCount++;
-    // }
-
-    // public void ReturnUIToOriginalPosition()
-    // {
-    //     uiObstructedCount = Mathf.Max(0, uiObstructedCount - 1);
-    // }
 
     public void FlipColors()
     {
@@ -614,7 +626,6 @@ public class ClientLogic : MonoBehaviour
         public float width;
         public float height;
     }
-
 
     [System.Serializable]
     public class ImageDataMessage
