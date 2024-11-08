@@ -22,7 +22,7 @@ public class Anchor : MonoBehaviour
 
     public string id;
 
-    private bool DebugMode = true;
+    private bool DebugMode = false;
 
 
     private enum RaycastHitType

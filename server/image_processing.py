@@ -244,14 +244,17 @@ def calculate_background_colors(image, UIScreenCorners,flip_colors):
     exterior_roi = image[exterior_min_y:exterior_max_y, exterior_min_x:exterior_max_x]
 
     # Calculate the mean colors for the exterior ROI
-    exterior_roi_lab = cv2.cvtColor(exterior_roi[:3], cv2.COLOR_BGR2LAB)
+    try:
+        exterior_roi_lab = cv2.cvtColor(exterior_roi, cv2.COLOR_BGR2LAB)
+        mean_color_lab = np.array(cv2.mean(exterior_roi_lab)[:3])
+        L, a, b = mean_color_lab
+    except:
+        L, a, b = 0, 0, 0
 
     # Calculate the mean color in LAB color space
-    mean_color_lab = np.array(cv2.mean(exterior_roi_lab)[:3])
 
     #print(f"Mean color LAB: {mean_color_lab}")
 
-    L, a, b = mean_color_lab
 
     # Scale L for further processing
     L_scaled = L * (100 / 255)

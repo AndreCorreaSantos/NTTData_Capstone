@@ -22,6 +22,7 @@ public class GUIMovementStateMachine
 {
     private State currentState;
     public float desiredMotionVal;
+    private int remendo = 0;
 
     public GUIMovementStateMachine()
     {
@@ -29,7 +30,7 @@ public class GUIMovementStateMachine
         desiredMotionVal = 0;
     }
 
-    public void TransitionState(float angleFromCameraFustrum, int collisionCountMain, int collisionCountSide, float maxSwayAngleFromCameraFustrum = 45f, float maxAngleFromCameraFustrum = 60f, float minAngleFromCameraFustrumAfterAdjust = 5f)
+    public async void TransitionState(float angleFromCameraFustrum, int collisionCountMain, int collisionCountSide, float maxSwayAngleFromCameraFustrum = 45f, float maxAngleFromCameraFustrum = 60f, float minAngleFromCameraFustrumAfterAdjust = 5f)
     {
         switch (currentState)
         {
@@ -49,9 +50,11 @@ public class GUIMovementStateMachine
                 break;
             case State.Stable:
                 Debug.Log("q4");
-                if (collisionCountSide > 0) { currentState = State.Stable; }
-                else if (angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.AdjustToPlayerView;
-                else if (collisionCountMain > 0) currentState = State.HorizontalSway;
+                Debug.Log("Remendo:" + remendo);
+                if (collisionCountMain > 0) { remendo = 0 ; currentState = State.HorizontalSway;}
+                else if (collisionCountSide <= 0 && remendo < 50) { remendo ++;}
+                else if (collisionCountSide <= 0 && remendo >= 50) { remendo = 0; currentState = State.FollowerCentralized; Debug.Log("q4.1"); }
+                else if (angleFromCameraFustrum > maxAngleFromCameraFustrum) {remendo = 0; currentState = State.AdjustToPlayerView; } 
                 break;
             case State.AdjustToPlayerView:
                 Debug.Log("q5");
@@ -106,7 +109,7 @@ public class GUIMovementStateMachine
                 desiredPosition = CameraPosition + forwardDirection * distanceFromPlayer;
                 break;
             case State.HorizontalSway:
-                float angularSpeed = 5f * rotationDirection;
+                float angularSpeed = 10f * rotationDirection;
                 desiredPosition = RotateAroundPoint(
                     gui.transform.position,
                     CameraPosition,
@@ -271,7 +274,6 @@ public class ClientLogic : MonoBehaviour
         UpdateUIPosition();
         UpdateUIRotation();
     }
-
     private void UpdateUIPosition()
     {
         if (uiCanvasInstance != null && playerCamera != null)
