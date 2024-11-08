@@ -1,4 +1,4 @@
-# Project Setup Instructions
+# Project Setup Instructions --> must run in ADMINISTRATOR MODE
 ### Step 0: CD into the server folder of the project.
 
 ### Step 1: Install Miniforge
