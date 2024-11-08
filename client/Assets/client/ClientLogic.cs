@@ -511,10 +511,10 @@ public class ClientLogic : MonoBehaviour
             Vector3 initialPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
 
             uiCanvasInstance = Instantiate(UICanvas, initialPosition, Quaternion.identity);
-            booleanToggle = uiCanvasInstance.transform.GetChild(1).GetChild(0).GetChild(3).GetChild(0).GetChild(0).GetChild(3).GetChild(1).GetChild(0).gameObject;
+            /* booleanToggle = GameObject.FindWithTag("BooleanToggleTag");
             booleanToggle.GetComponent<Toggle>().onValueChanged.AddListener(delegate {
                 FlipColors();
-            });
+            }); */
 
             // Make the UI face the player
             uiCanvasInstance.transform.rotation = Quaternion.LookRotation(uiCanvasInstance.transform.position - playerCamera.transform.position);
