@@ -1,13 +1,12 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using System;
-using UnityEditor;
-using System.Linq;
-
+using System.IO;
+using Newtonsoft.Json;
 
 public enum State
 {
@@ -17,7 +16,6 @@ public enum State
     Stable,
     AdjustToPlayerView
 }
-
 
 public class ClientLogic : MonoBehaviour
 {
@@ -35,7 +33,6 @@ public class ClientLogic : MonoBehaviour
     public TMP_Text dangerSource;
 
     private GameObject uiCanvasInstance;
-    private GameObject booleanToggle;
 
     private GUIMovementStateMachine gui_sm;
 
@@ -43,7 +40,7 @@ public class ClientLogic : MonoBehaviour
     private byte[] depthImageBytes;
 
     private float timeSinceLastSend = 0f;
-    private float sendInterval = 0.5f;
+    private float sendInterval = 1.0f;
 
     private Vector3[] UIScreenCorners = new Vector3[4];
     [SerializeField] private bool flipColors = false;
@@ -83,6 +80,7 @@ public class ClientLogic : MonoBehaviour
     public GameObject debugPrefab;
 
     public GameObject redDot;
+    private int first = 0;
 
     void Start()
     {
@@ -90,7 +88,6 @@ public class ClientLogic : MonoBehaviour
         StartWebSocket();
         SpawnUI();
         connection.OnServerMessage += HandleServerMessage;
-        // redDot = Instantiate(redDot, new Vector3(0, 0, 0), Quaternion.identity);
     }
 
     void Update()
@@ -101,6 +98,7 @@ public class ClientLogic : MonoBehaviour
         {
             timeSinceLastSend = 0f;
 
+            // Get UIScreenCorners
             Vector3[] UIWorldCorners = new Vector3[4];
             uiCanvasInstance.transform.GetChild(1).GetChild(0).gameObject.GetComponent<RectTransform>().GetWorldCorners(UIWorldCorners);
             for (int i = 0; i < UIWorldCorners.Length; i++)
@@ -109,7 +107,6 @@ public class ClientLogic : MonoBehaviour
                 UIscreenCorner.x /= Screen.width;
                 UIscreenCorner.y /= Screen.height;
                 UIScreenCorners[i] = UIscreenCorner;
-                // Debug.Log($"Screen Corner {i}: {UIscreenCorner}");
             }
 
             Texture2D colorTexture = ConvertToTexture2D(colorImage.texture);
@@ -117,9 +114,6 @@ public class ClientLogic : MonoBehaviour
             if (colorTexture != null)
             {
                 colorImageBytes = colorTexture.EncodeToJPG();
-                // colorImageBytes = colorTexture.GetRawTextureData();
-                // print(colorTexture.GetRawTextureData()[0]);
-                // print(colorTexture.format);
             }
 
             SendDataAsync();
@@ -128,18 +122,10 @@ public class ClientLogic : MonoBehaviour
 
     void LateUpdate()
     {
-        
-        Debug.Log("main: "+mainUiObstructedCount);
-        Debug.Log("side: "+sideUiObstructedCount);
-        Debug.Log("anchors: "+ anchors.Count);
-
-        foreach(var anchor in anchors)
-        {
-            Debug.Log(anchor.Key);
-        }
         UpdateUIPosition();
         UpdateUIRotation();
     }
+
     private void UpdateUIPosition()
     {
         if (uiCanvasInstance != null && playerCamera != null)
@@ -176,25 +162,6 @@ public class ClientLogic : MonoBehaviour
                 );
             }
         }
-    }
-
-
-    private void HandeServerMessageDangerDetection(string message)
-    {
-        Debug.LogWarning("Received from server: " + message);
-
-        DangerDataMessage dangerData = JsonUtility.FromJson<DangerDataMessage>(message);
-        if (dangerData == null)
-        {
-            Debug.LogWarning("Invalid danger analysis data received from server");
-            return;
-        }
-        if (dangerData.danger_level != "LOW DANGER")
-        {
-            NotiffBlock.SetActive(true);
-        }
-        dangerLevel.text = dangerData.danger_level;
-        dangerSource.text = dangerData.danger_source;
     }
 
     private void HandleServerMessage(string message)
@@ -242,6 +209,24 @@ public class ClientLogic : MonoBehaviour
         }
     }
 
+    private void HandeServerMessageDangerDetection(string message)
+    {
+        Debug.LogWarning("Received from server: " + message);
+
+        DangerDataMessage dangerData = JsonUtility.FromJson<DangerDataMessage>(message);
+        if (dangerData == null)
+        {
+            Debug.LogWarning("Invalid danger analysis data received from server");
+            return;
+        }
+        if (dangerData.danger_level != "LOW DANGER")
+        {
+            NotiffBlock.SetActive(true);
+        }
+        dangerLevel.text = dangerData.danger_level;
+        dangerSource.text = dangerData.danger_source;
+    }
+
     private IEnumerator LerpColors(setColors colorSetter, Color targetBackgroundColor, Color targetTextColor, float duration)
     {
         Color startBackgroundColor = colorSetter.Background.color;
@@ -275,7 +260,6 @@ public class ClientLogic : MonoBehaviour
         // Check if anchor already exists --> set position
         if (anchors.ContainsKey(id))
         {
-            Debug.Log("Anchor already exists");
             GameObject anchor = anchors[id];
             anchor.transform.position = worldPosition;
 
@@ -312,40 +296,78 @@ public class ClientLogic : MonoBehaviour
     {
         if (anchors.ContainsKey(id))
         {
-            // Destroy(anchors[id]);
+            Destroy(anchors[id]);
             anchors.Remove(id);
         }
     }
 
-    private async void SendDataAsync()
+    private void SendDataAsync()
     {
         if (colorImageBytes != null && colorImage.texture is Texture2D colorTex)
         {
-            await SendImageDataAsync("color", colorImageBytes, colorTex.width, colorTex.height);
-        }
+            // Capture Unity data and convert to serializable forms
+            var pos = new SerializableVector3(playerCamera.transform.position);
+            var invMat = new SerializableMatrix4x4((playerCamera.projectionMatrix * playerCamera.worldToCameraMatrix).inverse);
 
-        if (depthImageBytes != null && depthImage.texture is Texture2D depthTex)
-        {
-            await SendImageDataAsync("depth", depthImageBytes, depthTex.width, depthTex.height);
+            SerializableVector3[] uiScreenCornersCopy = new SerializableVector3[UIScreenCorners.Length];
+            for (int i = 0; i < UIScreenCorners.Length; i++)
+            {
+                uiScreenCornersCopy[i] = new SerializableVector3(UIScreenCorners[i]);
+            }
+            bool flipColorsCopy = flipColors;
+
+            // Prepare data for background thread
+            var unityData = new UnityDataForBackground
+            {
+                pos = pos,
+                invMat = invMat,
+                uiScreenCorners = uiScreenCornersCopy,
+                flipColors = flipColorsCopy,
+            };
+
+            // Start a task to perform heavy computations and send data
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await SendImageDataAsync(unityData, colorImageBytes);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError("Error in background task: " + ex);
+                }
+            });
         }
     }
 
-    private async Task SendImageDataAsync(string imageType, byte[] imageBytes, int imageWidth, int imageHeight)
+    private class UnityDataForBackground
     {
-        Vector3 pos = playerCamera.transform.position;
+        public SerializableVector3 pos;
+        public SerializableMatrix4x4 invMat;
+        public SerializableVector3[] uiScreenCorners;
+        public bool flipColors;
+    }
 
-        Matrix4x4 invMat = (playerCamera.projectionMatrix * playerCamera.worldToCameraMatrix).inverse;
+    private async Task SendImageDataAsync(UnityDataForBackground unityData, byte[] imageBytes)
+    {
+        // Base64 encode the image bytes
+        string base64ImageData = System.Convert.ToBase64String(imageBytes);
+
+        // Create data object
         ImageDataMessage dataObject = new ImageDataMessage
         {
-            type = imageType,
-            data = new ObjectData { x = pos.x, y = pos.y, z = pos.z, id = "Null", height = 0, width = 0 },
-            invMat = invMat,
-            imageData = System.Convert.ToBase64String(imageBytes),
-            UIScreenCorners = UIScreenCorners,
-            flipColors = flipColors,
+            type = "color",
+            data = new ObjectData { x = unityData.pos.x, y = unityData.pos.y, z = unityData.pos.z, id = "Null", height = 0, width = 0 },
+            invMat = unityData.invMat,
+            imageData = base64ImageData,
+            UIScreenCorners = unityData.uiScreenCorners,
+            flipColors = unityData.flipColors,
         };
 
-        string jsonString = JsonUtility.ToJson(dataObject);
+        // Serialize to JSON using a thread-safe serializer
+        string jsonString = JsonConvert.SerializeObject(dataObject);
+
+        // Send the data asynchronously
         await connection.SendTextAsync(jsonString);
     }
 
@@ -359,10 +381,6 @@ public class ClientLogic : MonoBehaviour
             Vector3 initialPosition = playerCamera.transform.position + forwardDirection * distanceFromPlayer;
 
             uiCanvasInstance = Instantiate(UICanvas, initialPosition, Quaternion.identity);
-            /* booleanToggle = GameObject.FindWithTag("BooleanToggleTag");
-            booleanToggle.GetComponent<Toggle>().onValueChanged.AddListener(delegate {
-                FlipColors();
-            }); */
 
             // Make the UI face the player
             uiCanvasInstance.transform.rotation = Quaternion.LookRotation(uiCanvasInstance.transform.position - playerCamera.transform.position);
@@ -416,7 +434,7 @@ public class ClientLogic : MonoBehaviour
         flipColors = !flipColors;
     }
 
-    // Serializable classes for JSON deserialization
+    // Serializable classes for JSON deserialization and serialization
 
     [System.Serializable]
     public class FrameDataMessage
@@ -465,13 +483,43 @@ public class ClientLogic : MonoBehaviour
     {
         public string type;
         public ObjectData data;
-        public Matrix4x4 invMat;
+        public SerializableMatrix4x4 invMat;
         public string imageData;
         public float fx;
         public float fy;
         public float cx;
         public float cy;
-        public Vector3[] UIScreenCorners;
+        public SerializableVector3[] UIScreenCorners;
         public bool flipColors;
+    }
+
+    [System.Serializable]
+    public class SerializableMatrix4x4
+    {
+        public float[] elements; // 16 elements
+
+        public SerializableMatrix4x4(Matrix4x4 matrix)
+        {
+            elements = new float[16];
+            elements[0] = matrix.m00; elements[1] = matrix.m01; elements[2] = matrix.m02; elements[3] = matrix.m03;
+            elements[4] = matrix.m10; elements[5] = matrix.m11; elements[6] = matrix.m12; elements[7] = matrix.m13;
+            elements[8] = matrix.m20; elements[9] = matrix.m21; elements[10] = matrix.m22; elements[11] = matrix.m23;
+            elements[12] = matrix.m30; elements[13] = matrix.m31; elements[14] = matrix.m32; elements[15] = matrix.m33;
+        }
+    }
+
+    [System.Serializable]
+    public class SerializableVector3
+    {
+        public float x;
+        public float y;
+        public float z;
+
+        public SerializableVector3(Vector3 vector)
+        {
+            x = vector.x;
+            y = vector.y;
+            z = vector.z;
+        }
     }
 }

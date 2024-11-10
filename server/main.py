@@ -99,13 +99,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             camera_position = np.array([data_message['x'], data_message['y'], data_message['z']])
             print("Camera Position: ", camera_position)
-            inv_mat = np.array([
-                [inv_mat_message['e00'], inv_mat_message['e01'], inv_mat_message['e02'], inv_mat_message['e03']],
-                [inv_mat_message['e10'], inv_mat_message['e11'], inv_mat_message['e12'], inv_mat_message['e13']],
-                [inv_mat_message['e20'], inv_mat_message['e21'], inv_mat_message['e22'], inv_mat_message['e23']],
-                [inv_mat_message['e30'], inv_mat_message['e31'], inv_mat_message['e32'], inv_mat_message['e33']]
-            ])
-
+            inv_mat = np.array(inv_mat_message["elements"]).reshape(4, 4)
             # Validate essential fields
             if image_type is None or image_data_base64 is None:
                 print("Missing 'type' or 'imageData' in the received message.")
