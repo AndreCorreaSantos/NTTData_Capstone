@@ -811,6 +811,7 @@ MonoBehaviour:
   NotiffBlock: {fileID: 1315485181}
   dangerLevel: {fileID: 1946530151}
   dangerSource: {fileID: 1111367581}
+  sendInterval: 1
   flipColors: 0
   mainHitPositions: []
   uiFollowSpeed: 5

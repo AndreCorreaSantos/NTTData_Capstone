@@ -40,7 +40,7 @@ public class ClientLogic : MonoBehaviour
     private byte[] depthImageBytes;
 
     private float timeSinceLastSend = 0f;
-    private float sendInterval = 1.0f;
+    public float sendInterval = 1.0f; // Adjusted send interval to reduce frequency
 
     private Vector3[] UIScreenCorners = new Vector3[4];
     [SerializeField] private bool flipColors = false;
@@ -82,6 +82,13 @@ public class ClientLogic : MonoBehaviour
     public GameObject redDot;
     private int first = 0;
 
+    // Message queue for outgoing messages
+    private readonly Queue<string> messageQueue = new Queue<string>();
+    private readonly object queueLock = new object();
+    private readonly int MAX_QUEUE_SIZE = 10; // Adjust as needed
+
+    private readonly Queue<Action> mainThreadActions = new Queue<Action>();
+
     void Start()
     {
         gui_sm = new GUIMovementStateMachine();
@@ -113,17 +120,150 @@ public class ClientLogic : MonoBehaviour
 
             if (colorTexture != null)
             {
-                colorImageBytes = colorTexture.EncodeToJPG();
+                // Adjust the JPEG quality to reduce data size (e.g., 50 for lower quality)
+                int jpegQuality = 50; // Adjust as needed
+                colorImageBytes = colorTexture.EncodeToJPG(jpegQuality);
             }
 
             SendDataAsync();
         }
-    }
 
-    void LateUpdate()
-    {
+        // Execute actions queued for the main thread
+        while (mainThreadActions.Count > 0)
+        {
+            Action action = null;
+            lock (mainThreadActions)
+            {
+                if (mainThreadActions.Count > 0)
+                {
+                    action = mainThreadActions.Dequeue();
+                }
+            }
+            action?.Invoke();
+        }
+
+        // Send one message from the queue per frame
+        if (messageQueue.Count > 0)
+        {
+            string messageToSend = null;
+            lock (queueLock)
+            {
+                if (messageQueue.Count > 0)
+                {
+                    messageToSend = messageQueue.Dequeue();
+                }
+            }
+
+            if (messageToSend != null)
+            {
+                // Send the message
+                RunOnMainThread(() =>
+                {
+                    // Fire and forget; don't await to prevent blocking
+                    connection.SendTextAsync(messageToSend).ConfigureAwait(false);
+                });
+            }
+        }
+
         UpdateUIPosition();
         UpdateUIRotation();
+    }
+
+    private void RunOnMainThread(Action action)
+    {
+        lock (mainThreadActions)
+        {
+            mainThreadActions.Enqueue(action);
+        }
+    }
+
+    private void EnqueueMessage(string message)
+    {
+        lock (queueLock)
+        {
+            if (messageQueue.Count < MAX_QUEUE_SIZE)
+            {
+                messageQueue.Enqueue(message);
+            }
+            else
+            {
+                Debug.LogWarning("Message queue is full. Dropping message.");
+            }
+        }
+    }
+
+    private void SendDataAsync()
+    {
+        if (colorImageBytes != null && colorImage.texture is Texture2D colorTex)
+        {
+            // Capture Unity data and convert to serializable forms
+            var pos = new SerializableVector3(playerCamera.transform.position);
+            var invMat = new SerializableMatrix4x4((playerCamera.projectionMatrix * playerCamera.worldToCameraMatrix).inverse);
+
+            SerializableVector3[] uiScreenCornersCopy = new SerializableVector3[UIScreenCorners.Length];
+            for (int i = 0; i < UIScreenCorners.Length; i++)
+            {
+                uiScreenCornersCopy[i] = new SerializableVector3(UIScreenCorners[i]);
+            }
+            bool flipColorsCopy = flipColors;
+
+            // Prepare data for background thread
+            var unityData = new UnityDataForBackground
+            {
+                pos = pos,
+                invMat = invMat,
+                uiScreenCorners = uiScreenCornersCopy,
+                flipColors = flipColorsCopy,
+            };
+            float time = Time.time;
+            // Start a task to perform heavy computations and enqueue data
+            Task.Run(() =>
+            {
+                try
+                {
+                    // Prepare message
+                    string jsonString = PrepareMessage(unityData, colorImageBytes, time);
+
+                    // Enqueue message
+                    EnqueueMessage(jsonString);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError("Error in background task: " + ex);
+                }
+            });
+        }
+    }
+
+    private string PrepareMessage(UnityDataForBackground unityData, byte[] imageBytes, float time)
+    {
+        // Base64 encode the image bytes
+        string base64ImageData = System.Convert.ToBase64String(imageBytes);
+
+        // Create data object
+        ImageDataMessage dataObject = new ImageDataMessage
+        {
+            type = "color",
+            data = new ObjectData
+            {
+                x = unityData.pos.x,
+                y = unityData.pos.y,
+                z = unityData.pos.z,
+                id = "Null",
+                height = 0,
+                width = 0
+            },
+            invMat = unityData.invMat,
+            timestamp = time,
+            imageData = base64ImageData,
+            UIScreenCorners = unityData.uiScreenCorners,
+            flipColors = unityData.flipColors,
+        };
+
+        // Serialize to JSON using a thread-safe serializer
+        string jsonString = JsonConvert.SerializeObject(dataObject);
+
+        return jsonString;
     }
 
     private void UpdateUIPosition()
@@ -197,6 +337,8 @@ public class ClientLogic : MonoBehaviour
             {
                 Debug.LogWarning("setColors component not found on uiCanvasInstance");
             }
+            float time_back = Time.time - frameData.timestamp;
+            Debug.Log("Time back"+time_back);
         }
 
         // Handle object positions
@@ -301,76 +443,6 @@ public class ClientLogic : MonoBehaviour
         }
     }
 
-    private void SendDataAsync()
-    {
-        if (colorImageBytes != null && colorImage.texture is Texture2D colorTex)
-        {
-            // Capture Unity data and convert to serializable forms
-            var pos = new SerializableVector3(playerCamera.transform.position);
-            var invMat = new SerializableMatrix4x4((playerCamera.projectionMatrix * playerCamera.worldToCameraMatrix).inverse);
-
-            SerializableVector3[] uiScreenCornersCopy = new SerializableVector3[UIScreenCorners.Length];
-            for (int i = 0; i < UIScreenCorners.Length; i++)
-            {
-                uiScreenCornersCopy[i] = new SerializableVector3(UIScreenCorners[i]);
-            }
-            bool flipColorsCopy = flipColors;
-
-            // Prepare data for background thread
-            var unityData = new UnityDataForBackground
-            {
-                pos = pos,
-                invMat = invMat,
-                uiScreenCorners = uiScreenCornersCopy,
-                flipColors = flipColorsCopy,
-            };
-
-            // Start a task to perform heavy computations and send data
-            Task.Run(async () =>
-            {
-                try
-                {
-                    await SendImageDataAsync(unityData, colorImageBytes);
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError("Error in background task: " + ex);
-                }
-            });
-        }
-    }
-
-    private class UnityDataForBackground
-    {
-        public SerializableVector3 pos;
-        public SerializableMatrix4x4 invMat;
-        public SerializableVector3[] uiScreenCorners;
-        public bool flipColors;
-    }
-
-    private async Task SendImageDataAsync(UnityDataForBackground unityData, byte[] imageBytes)
-    {
-        // Base64 encode the image bytes
-        string base64ImageData = System.Convert.ToBase64String(imageBytes);
-
-        // Create data object
-        ImageDataMessage dataObject = new ImageDataMessage
-        {
-            type = "color",
-            data = new ObjectData { x = unityData.pos.x, y = unityData.pos.y, z = unityData.pos.z, id = "Null", height = 0, width = 0 },
-            invMat = unityData.invMat,
-            imageData = base64ImageData,
-            UIScreenCorners = unityData.uiScreenCorners,
-            flipColors = unityData.flipColors,
-        };
-
-        // Serialize to JSON using a thread-safe serializer
-        string jsonString = JsonConvert.SerializeObject(dataObject);
-
-        // Send the data asynchronously
-        await connection.SendTextAsync(jsonString);
-    }
-
     private void SpawnUI()
     {
         if (playerCamera != null)
@@ -442,6 +514,7 @@ public class ClientLogic : MonoBehaviour
         public string type;
         public GuiColorsData gui_colors;
         public List<ObjectData> objects;
+        public float timestamp;
     }
 
     [System.Serializable]
@@ -484,6 +557,7 @@ public class ClientLogic : MonoBehaviour
         public string type;
         public ObjectData data;
         public SerializableMatrix4x4 invMat;
+        public float timestamp;
         public string imageData;
         public float fx;
         public float fy;
@@ -500,11 +574,13 @@ public class ClientLogic : MonoBehaviour
 
         public SerializableMatrix4x4(Matrix4x4 matrix)
         {
-            elements = new float[16];
-            elements[0] = matrix.m00; elements[1] = matrix.m01; elements[2] = matrix.m02; elements[3] = matrix.m03;
-            elements[4] = matrix.m10; elements[5] = matrix.m11; elements[6] = matrix.m12; elements[7] = matrix.m13;
-            elements[8] = matrix.m20; elements[9] = matrix.m21; elements[10] = matrix.m22; elements[11] = matrix.m23;
-            elements[12] = matrix.m30; elements[13] = matrix.m31; elements[14] = matrix.m32; elements[15] = matrix.m33;
+            elements = new float[16]
+            {
+                matrix.m00, matrix.m01, matrix.m02, matrix.m03,
+                matrix.m10, matrix.m11, matrix.m12, matrix.m13,
+                matrix.m20, matrix.m21, matrix.m22, matrix.m23,
+                matrix.m30, matrix.m31, matrix.m32, matrix.m33
+            };
         }
     }
 
@@ -521,5 +597,13 @@ public class ClientLogic : MonoBehaviour
             y = vector.y;
             z = vector.z;
         }
+    }
+
+    private class UnityDataForBackground
+    {
+        public SerializableVector3 pos;
+        public SerializableMatrix4x4 invMat;
+        public SerializableVector3[] uiScreenCorners;
+        public bool flipColors;
     }
 }

@@ -96,6 +96,7 @@ async def websocket_endpoint(websocket: WebSocket):
             inv_mat_message = message.get('invMat')
             ui_screen_corners = message.get('UIScreenCorners')
             flip_colors = message.get('flipColors')
+            time = message.get('timestamp')
 
             camera_position = np.array([data_message['x'], data_message['y'], data_message['z']])
             print("Camera Position: ", camera_position)
@@ -192,7 +193,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             "b": gui_text_color[2]
                         }
                     },
-                    "objects": objects_data if objects_data else None  # List or None
+                    "objects": objects_data if objects_data else None,  # List or None
+                    "timestamp":time
                 }
 
                 # Send the response back to the client
