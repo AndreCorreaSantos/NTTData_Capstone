@@ -18,6 +18,7 @@ public class Connection : MonoBehaviour
     // StartConnection function to initialize and start the WebSocket connection
     public async void StartConnection()
     {
+        Debug.Log("Connecting to server: " + url);
         websocket = new WebSocket(url);
 
         websocket.OnOpen += () =>

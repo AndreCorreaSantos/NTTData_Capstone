@@ -35,29 +35,29 @@ public class GUIMovementStateMachine
         switch (currentState)
         {
             case State.FollowerCentralized:
-                Debug.Log("q1");
-                Debug.Log("Collision count main:" + collisionCountMain);
+                //Debug.Log("q1");
+                //Debug.Log("Collision count main:" + collisionCountMain);
                 if (collisionCountMain >= 1) currentState = State.HorizontalSway; break;
             case State.HorizontalSway:
-                Debug.Log("q2");
+                //Debug.Log("q2");
                 if (collisionCountMain == 0) currentState = State.Stable;
                 else if (angleFromCameraFustrum > maxSwayAngleFromCameraFustrum) currentState = State.VerticalSway;
                 break;
             case State.VerticalSway:
-                Debug.Log("q3");
+                //Debug.Log("q3");
                 if (collisionCountMain == 0) currentState = State.Stable;
                 if (angleFromCameraFustrum > maxAngleFromCameraFustrum) currentState = State.AdjustToPlayerView;
                 break;
             case State.Stable:
-                Debug.Log("q4");
-                Debug.Log("Remendo:" + remendo);
+                //Debug.Log("q4");
+                //Debug.Log("Remendo:" + remendo);
                 if (collisionCountMain > 0) { remendo = 0 ; currentState = State.HorizontalSway;}
                 else if (collisionCountSide <= 0 && remendo < 50) { remendo ++;}
                 else if (collisionCountSide <= 0 && remendo >= 50) { remendo = 0; currentState = State.FollowerCentralized; Debug.Log("q4.1"); }
                 else if (angleFromCameraFustrum > maxAngleFromCameraFustrum) {remendo = 0; currentState = State.AdjustToPlayerView; } 
                 break;
             case State.AdjustToPlayerView:
-                Debug.Log("q5");
+                //Debug.Log("q5");
                 if (angleFromCameraFustrum < minAngleFromCameraFustrumAfterAdjust) currentState = State.FollowerCentralized;
                 break;
         }
@@ -218,6 +218,11 @@ public class ClientLogic : MonoBehaviour
 
     public GameObject redDot;
 
+    void Awake(){
+        connection.url = PlayerPrefs.GetString("ip");
+    }
+
+    
     void Start()
     {
         gui_sm = new GUIMovementStateMachine();
@@ -263,13 +268,13 @@ public class ClientLogic : MonoBehaviour
     void LateUpdate()
     {
         
-        Debug.Log("main: "+mainUiObstructedCount);
-        Debug.Log("side: "+sideUiObstructedCount);
-        Debug.Log("anchors: "+ anchors.Count);
+        //Debug.Log("main: "+mainUiObstructedCount);
+        //Debug.Log("side: "+sideUiObstructedCount);
+        //Debug.Log("anchors: "+ anchors.Count);
 
         foreach(var anchor in anchors)
         {
-            Debug.Log(anchor.Key);
+            //Debug.Log(anchor.Key);
         }
         UpdateUIPosition();
         UpdateUIRotation();
